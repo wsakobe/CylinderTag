@@ -18,7 +18,7 @@
                 // -l 库文件
                 "-I", "D:/opencv/build/install/include",
                 "-I", "D:/opencv/build/install/include/opencv2",
-                "-L", "D:/opencv/build/install/x64/mingw/lib",
+                "-L", "D:/opencv/build/install/x64/mingw/bin",
                 "-l", "libopencv_world453"
             ],
             "options": {

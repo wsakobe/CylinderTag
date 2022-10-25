@@ -1,8 +1,8 @@
 #include <opencv2/opencv.hpp>
-// #include <opencv2/imgcodecs.hpp>
-// #include <opencv2/imgproc.hpp>
-// #include <opencv2/highgui.hpp>
-// #include <opencv2/features2d.hpp>
+#include <opencv2/imgcodecs.hpp>
+#include <opencv2/imgproc.hpp>
+#include <opencv2/highgui.hpp>
+#include <opencv2/features2d.hpp>
 
 #include <algorithm>
 #include <cstdlib>
@@ -24,11 +24,9 @@ int main() {
 	{
 		cvtColor(frame, img_gray, COLOR_BGR2GRAY);
 		imshow("FAST", img_gray);
-		waitKey(0);
+		waitKey(1000);
 	}
 	
-	destroyAllWindows();
-
 	system("pause");
 	return 0;
 }
