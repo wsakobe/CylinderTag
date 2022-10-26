@@ -24,7 +24,7 @@ int main() {
 	{
 		cvtColor(frame, img_gray, COLOR_BGR2GRAY);
 		imshow("FAST", img_gray);
-		waitKey(1000);
+		waitKey(0);
 	}
 	
 	system("pause");
