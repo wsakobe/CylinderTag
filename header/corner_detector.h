@@ -52,6 +52,12 @@ private:
     // CCL use
     Mat img_labeled, stats, centroids;
     int nccomp_area = 0;
+
+    // Edge extraction use
+    vector<float> edge_angle;
+    vector<int> kmeans_label;
+    float Gmax = -1, Gmin = 1;
+    double measure;
 };
 
 #endif

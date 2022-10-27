@@ -67,9 +67,7 @@ void corner_detector::connectedComponentLabeling(const Mat& src, vector<vector<P
         }
     } 
     int count = 0;
-    cout << quadArea.size() << endl;
     for (auto iter = quadArea.begin(); iter != quadArea.end(); ){
-        cout << quadArea[count].size() << " " << count << endl;
         if (illegal[count++]){
             iter = quadArea.erase(iter);
         }
@@ -99,7 +97,34 @@ void corner_detector::connectedComponentLabeling(const Mat& src, vector<vector<P
     // cv::waitKey(0);
 }
 
-void corner_detector::edgeExtraction(const Mat& img, vector<vector<Point>> quadArea, vector<Point2f> corners_init, int KMeansIter){}
+void corner_detector::edgeExtraction(const Mat& img, vector<vector<Point>> quadArea, vector<Point2f> corners_init, int KMeansIter){
+    Mat Gx, Gy;
+    Sobel(img, Gx, CV_64F, 1, 0);
+    Sobel(img, Gy, CV_64F, 1, 0);
+    Mat Gangle(Gx.rows, Gx.cols, CV_32FC1);
+    Mat Gpow(Gx.rows, Gx.cols, CV_32FC1);
+
+    for (int i = 0; i < Gx.rows; i++)
+        for (int j = 0; j < Gx.cols; j++){
+            if (Gx.at<float>(i, j) - 0.0 > 0.01){
+                Gangle.at<float>(i, j) = atan2(Gy.at<float>(i, j), Gx.at<float>(i, j));
+                Gpow.at<float>(i, j) = sqrt(Gy.at<float>(i, j) * Gy.at<float>(i, j) + Gx.at<float>(i, j) * Gx.at<float>(i, j));    
+            }
+        }
+    for (int i = 0; i < quadArea.size(); i++){
+        edge_angle.clear();
+        Gmax = -1, Gmin = 1;
+        for (int j = 0; j < quadArea[i].size(); j++){
+            if (Gpow.at<float>(quadArea[i][j].x, quadArea[i][j].y) < Gmin) Gmin = Gpow.at<float>(quadArea[i][j].x, quadArea[i][j].y);
+            if (Gpow.at<float>(quadArea[i][j].x, quadArea[i][j].y) > Gmax) Gmax = Gpow.at<float>(quadArea[i][j].x, quadArea[i][j].y);
+        }
+        for (int j = 0; j < quadArea[i].size(); j++){
+            if (Gpow.at<float>(quadArea[i][j].x, quadArea[i][j].y) > (Gmax + Gmin) / 2)
+                edge_angle.push_back(Gangle.at<float>(quadArea[i][j].x, quadArea[i][j].y));
+        }
+        measure = kmeans(edge_angle, 4, kmeans_label, TermCriteria(TermCriteria::EPS+TermCriteria::COUNT, 10, 1.0), 5, KMEANS_RANDOM_CENTERS);
+    }
+}
 
 bool corner_detector::quadJudgment(vector<Point2f> corners_init, int areaPixelNumber, int threshold){
     return true;    
