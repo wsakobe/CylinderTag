@@ -99,20 +99,24 @@ void corner_detector::connectedComponentLabeling(const Mat& src, vector<vector<P
 
 void corner_detector::edgeExtraction(const Mat& img, vector<vector<Point>>& quadArea, vector<Point2f>& corners_init, int KMeansIter){
     Mat Gx, Gy;
-    Sobel(img, Gx, CV_64F, 1, 0);
-    Sobel(img, Gy, CV_64F, 1, 0);
+
+    Sobel(img, Gx, -1, 1, 0);
+    Sobel(img, Gy, -1, 0, 1);
+
     Mat Gangle(Gx.rows, Gx.cols, CV_32FC1);
-    Mat Gpow(Gx.rows, Gx.cols, CV_32FC1);
+    Mat Gpow(Gy.rows, Gy.cols, CV_32FC1);
 
     for (int i = 0; i < Gx.rows; i++)
         for (int j = 0; j < Gx.cols; j++){
-            if (Gx.at<float>(i, j) - 0.0 > 0.01){
-                Gangle.at<float>(i, j) = atan2(Gy.at<float>(i, j), Gx.at<float>(i, j));
-                Gpow.at<float>(i, j) = sqrt(Gy.at<float>(i, j) * Gy.at<float>(i, j) + Gx.at<float>(i, j) * Gx.at<float>(i, j));    
-            }
+            Gangle.at<float>(i, j) = atan2(Gy.at<double>(i, j), Gx.at<double>(i, j)) * 180 / CV_PI;
+            Gpow.at<float>(i, j) = sqrt(Gy.at<double>(i, j) * Gy.at<double>(i, j) + Gx.at<double>(i, j) * Gx.at<double>(i, j));    
         }
+
     for (int i = 0; i < quadArea.size(); i++){
         edge_angle.clear();
+        for (int j = 0; j < 4; j++){
+            edge_angle_cluster[j].clear();
+        }
         Gmax = -1, Gmin = 1;
         for (int j = 0; j < quadArea[i].size(); j++){
             if (Gpow.at<float>(quadArea[i][j].x, quadArea[i][j].y) < Gmin) Gmin = Gpow.at<float>(quadArea[i][j].x, quadArea[i][j].y);
@@ -122,9 +126,26 @@ void corner_detector::edgeExtraction(const Mat& img, vector<vector<Point>>& quad
             if (Gpow.at<float>(quadArea[i][j].x, quadArea[i][j].y) > (Gmax + Gmin) / 2)
                 edge_angle.push_back(Gangle.at<float>(quadArea[i][j].x, quadArea[i][j].y));
         }
-        measure = kmeans(edge_angle, 4, kmeans_label, TermCriteria(TermCriteria::EPS+TermCriteria::COUNT, 10, 1.0), 5, KMEANS_RANDOM_CENTERS);
-        for (int j = 0; j < edge_angle.size(); j++)
-            cout << edge_angle[j] << " " << kmeans_label[j] << endl;
+        measure = kmeans(edge_angle, 4, kmeans_label, TermCriteria(TermCriteria::EPS, 10, 0.5), 5, KMEANS_RANDOM_CENTERS);
+        for (int j = 0; j < edge_angle.size(); j++){
+            edge_angle_cluster[kmeans_label[j]].push_back(edge_angle[j]);
+        }
+        for (int j = 0; j < 4; j++){
+            // No enough points to fit a line
+            if (edge_angle_cluster[j].size() < 3){ 
+                break;
+            }
+
+            edge_angle_all = 0;
+            for (int k = 0; k < edge_angle_cluster[j].size(); k++){
+                edge_angle_all += edge_angle_cluster[j][k];
+            }
+
+            if (abs(edge_angle_all / edge_angle_cluster[j].size()) > 45 || abs(edge_angle_all / edge_angle_cluster[j].size()) < 135){
+                fitLine(edge_angle_cluster[j], line_func[j], DIST_L2, 0, 0.01, 0.01);
+            }
+
+        }
     }
 }
 

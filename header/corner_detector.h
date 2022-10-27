@@ -55,8 +55,9 @@ private:
 
     // Edge extraction use
     vector<float> edge_angle;
+    array<vector<float>, 4> edge_angle_cluster, line_func;
     vector<int> kmeans_label;
-    float Gmax = -1, Gmin = 1;
+    float Gmax = -1, Gmin = 1, edge_angle_all = 0;
     double measure;
 };
 
