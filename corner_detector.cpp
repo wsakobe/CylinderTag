@@ -50,7 +50,7 @@ void corner_detector::adaptiveThreshold(const Mat& src, Mat& dst, int thresholdW
     }
 }
 
-void corner_detector::connectedComponentLabeling(const Mat& src, vector<vector<Point>> quadArea, int method){
+void corner_detector::connectedComponentLabeling(const Mat& src, vector<vector<Point>>& quadArea, int method){
     nccomp_area = connectedComponentsWithStats(src, img_labeled, stats, centroids, 8, 4, CCL_BBDT);
     quadArea.resize(nccomp_area);
 
@@ -97,7 +97,7 @@ void corner_detector::connectedComponentLabeling(const Mat& src, vector<vector<P
     // cv::waitKey(0);
 }
 
-void corner_detector::edgeExtraction(const Mat& img, vector<vector<Point>> quadArea, vector<Point2f> corners_init, int KMeansIter){
+void corner_detector::edgeExtraction(const Mat& img, vector<vector<Point>>& quadArea, vector<Point2f>& corners_init, int KMeansIter){
     Mat Gx, Gy;
     Sobel(img, Gx, CV_64F, 1, 0);
     Sobel(img, Gy, CV_64F, 1, 0);
@@ -123,6 +123,8 @@ void corner_detector::edgeExtraction(const Mat& img, vector<vector<Point>> quadA
                 edge_angle.push_back(Gangle.at<float>(quadArea[i][j].x, quadArea[i][j].y));
         }
         measure = kmeans(edge_angle, 4, kmeans_label, TermCriteria(TermCriteria::EPS+TermCriteria::COUNT, 10, 1.0), 5, KMEANS_RANDOM_CENTERS);
+        for (int j = 0; j < edge_angle.size(); j++)
+            cout << edge_angle[j] << " " << kmeans_label[j] << endl;
     }
 }
 

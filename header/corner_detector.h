@@ -25,9 +25,9 @@ class corner_detector{
 public:
     void adaptiveThreshold(const Mat& src, Mat& dst, int thresholdWindow = 5);
     
-    void connectedComponentLabeling(const Mat& src, vector<vector<Point>> quadArea, int method = 0);
+    void connectedComponentLabeling(const Mat& src, vector<vector<Point>>& quadArea, int method = 0);
     
-    void edgeExtraction(const Mat& img, vector<vector<Point>> quadArea, vector<Point2f> corners_init, int KMeansIter = 5);
+    void edgeExtraction(const Mat& img, vector<vector<Point>>& quadArea, vector<Point2f>& corners_init, int KMeansIter = 5);
     
     bool quadJudgment(vector<Point2f> corners_init, int areaPixelNumber, int threshold = 0.5);
 
