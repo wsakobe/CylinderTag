@@ -97,6 +97,14 @@ void corner_detector::connectedComponentLabeling(const Mat& src, vector<vector<P
     // cv::waitKey(0);
 }
 
+bool cmp_dis(const corners_pre& a, corners_pre& b){
+    return a.dis_to_centroid < b.dis_to_centroid;
+}
+
+bool cmp_ang(const corners_pre& a, corners_pre& b){
+    return a.angle_to_centroid < b.angle_to_centroid;
+}
+
 void corner_detector::edgeExtraction(const Mat& img, vector<vector<Point>>& quadArea, vector<Point2f>& corners_init, int KMeansIter){
     Mat Gx, Gy;
 
@@ -113,7 +121,19 @@ void corner_detector::edgeExtraction(const Mat& img, vector<vector<Point>>& quad
         }
 
     for (int i = 0; i < quadArea.size(); i++){
+        flag = false;
         edge_angle.clear();
+        corners_p.clear();
+        Mat A(2, 2, CV_32FC1);
+        Mat B(2, 1, CV_32FC1);
+        Mat sol(2, 1, CV_32FC1);
+
+        moment = moments(quadArea[i]);
+        if (moment.m00 != 0){
+            area_center.x = moment.m10 / moment.m00;
+            area_center.y = moment.m01 / moment.m00;
+        }
+        
         for (int j = 0; j < 4; j++){
             edge_angle_cluster[j].clear();
         }
@@ -134,19 +154,38 @@ void corner_detector::edgeExtraction(const Mat& img, vector<vector<Point>>& quad
             // No enough points to fit a line
             if (edge_angle_cluster[j].size() < 3){ 
                 break;
+                flag = true;
             }
-
-            edge_angle_all = 0;
-            for (int k = 0; k < edge_angle_cluster[j].size(); k++){
-                edge_angle_all += edge_angle_cluster[j][k];
+            fitLine(edge_angle_cluster[j], line_func[j], DIST_L2, 0, 0.01, 0.01);
+        }
+        if (flag) continue;
+        for (int j = 0; j < 3; j++){
+            for (int k = j + 1; k < 4; k++){
+                A.at<float>(0, 0) = line_func[j][0];
+                A.at<float>(0, 1) = line_func[j][1];
+                A.at<float>(1, 0) = line_func[k][0];
+                A.at<float>(1, 1) = line_func[k][1];
+                B.at<float>(0, 0) = line_func[j][0] * line_func[j][2] + line_func[j][1] * line_func[j][3];
+                B.at<float>(1, 0) = line_func[k][0] * line_func[k][2] + line_func[k][1] * line_func[k][3];
+                if (determinant(A) != 0){
+                    solve(A, B, sol);
+                    c.intersect.x = sol.at<float>(0, 0);
+                    c.intersect.y = sol.at<float>(1, 0);
+                    c.dis_to_centroid = sqrt((c.intersect.x - area_center.x) * (c.intersect.x - area_center.x) + (c.intersect.y - area_center.y) * (c.intersect.y - area_center.y));
+                    c.angle_to_centroid = atan2(c.intersect.y - area_center.y, c.intersect.x - area_center.x);
+                    corners_p.push_back(c);
+                }
             }
-
-            if (abs(edge_angle_all / edge_angle_cluster[j].size()) > 45 || abs(edge_angle_all / edge_angle_cluster[j].size()) < 135){
-                fitLine(edge_angle_cluster[j], line_func[j], DIST_L2, 0, 0.01, 0.01);
-            }
-
+        }
+        if (corners_p.size() < 4) continue;
+        sort(corners_p.begin(), corners_p.end(), cmp_dis);
+        corners_p.resize(4);
+        sort(corners_p.begin(), corners_p.end(), cmp_ang);
+        for (int j = 0; j < 4; j++){
+            corners_init.push_back(corners_p[j].intersect);
         }
     }
+    cout << corners_init.size() << endl;
 }
 
 bool corner_detector::quadJudgment(vector<Point2f> corners_init, int areaPixelNumber, int threshold){
