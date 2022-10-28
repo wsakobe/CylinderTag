@@ -105,7 +105,7 @@ bool cmp_ang(const corners_pre& a, corners_pre& b){
     return a.angle_to_centroid < b.angle_to_centroid;
 }
 
-void corner_detector::edgeExtraction(const Mat& img, vector<vector<Point>>& quadArea, vector<Point2f>& corners_init, int KMeansIter){
+void corner_detector::edgeExtraction(const Mat& img, vector<vector<Point>>& quadArea, vector<vector<Point2f>>& corners_init, int KMeansIter){
     // Display
     Mat imgMark(img.rows, img.cols, CV_32FC3);
     cvtColor(img, imgMark, COLOR_GRAY2RGB);
@@ -205,7 +205,7 @@ void corner_detector::edgeExtraction(const Mat& img, vector<vector<Point>>& quad
         }
         if (flag_illegal_corner) continue;
         for (int j = 0; j < 4; j++){
-            corners_init.push_back(corners_p[j].intersect);
+            corners_init[i].push_back(corners_p[j].intersect);
         }
         for (int j = 0; j < quadArea[i].size(); j++){
             circle(imgMark, quadArea[i][j], 1, Scalar(0, 250, 0), -1);
@@ -231,8 +231,8 @@ bool corner_detector::quadJudgment(vector<corners_pre> corners, int areaPixelNum
     return true;    
 }
 
-void corner_detector::edgeSubPix(const Mat& src, vector<Point2f> corners_init, vector<Point2f> corners_refined, int subPixWindow){
-    corners_refined = corners_init;
+void corner_detector::edgeSubPix(const Mat& src, vector<vector<Point2f>>& corners_init, vector<vector<Point2f>>& corners_refined, int subPixWindow){
+    
 }
 
 bool corner_detector::parallelogramJudgment(vector<Point2f> corners){
@@ -250,9 +250,39 @@ bool corner_detector::parallelogramJudgment(vector<Point2f> corners){
     return false;
 }
 
-void corner_detector::featureRecovery(vector<vector<Point2f>> corners_refined, vector<featureInfo> features){}
+void corner_detector::featureRecovery(vector<vector<Point2f>>& corners_refined, vector<featureInfo> features){
+    memset(isVisited, false, sizeof(isVisited));
+    tag1 = false;
+    tag2 = false;
 
-void corner_detector::featureExtraction(const Mat& img, vector<vector<Point2f>> feature_src, vector<featureInfo> feature_dst){}
+    corner_dist.resize(corners_refined.size());
+    corner_centers.clear();
+    corner_angles_1.clear();
+    corner_angles_2.clear();
+    
+    for (int i = 0; i < corners_refined.size() - 1; i++){
+        moment = moments(corners_refined[i]);
+        if (moment.m00 != 0){
+            corner_centers.push_back(Point2f(moment.m10 / moment.m00, moment.m01 / moment.m00));
+        }
+        for (int j = 0; j < 4; j++){
+            corner_dist[i][j] = sqrt((corners_refined[i][j].x - corners_refined[i][(j + 1) % 4].x) * (corners_refined[i][j].x - corners_refined[i][(j + 1) % 4].x) + (corners_refined[i][j].y - corners_refined[i][(j + 1) % 4].y) * (corners_refined[i][j].y - corners_refined[i][(j + 1) % 4].y));
+        }
+        corner_angles_1.push_back(atan2(corners_refined[i][0].y - corners_refined[i][1].y, corners_refined[i][0].x - corners_refined[i][1].x) * 180 / CV_PI);
+        corner_angles_2.push_back(atan2(corners_refined[i][1].y - corners_refined[i][2].y, corners_refined[i][1].x - corners_refined[i][2].x) * 180 / CV_PI);
+    }
+    for (int i = 0; i < corners_refined.size() - 1; i++){
+        if (isVisited[i]) continue;
+        for (int j = i + 1; j < corners_refined.size(); j++){
+            if (!isVisited[j]){
+                feature_angle = atan2(corner_centers[i].y - corner_centers[j].y, corner_centers[i].x - corner_centers[j].x) * 180 / CV_PI;
+                
+            }
+        }
+    }
+}
+
+void corner_detector::featureExtraction(const Mat& img, vector<featureInfo> feature_src, vector<featureInfo> feature_dst){}
 
 void corner_detector::markerOrganization(vector<featureInfo> feature, vector<MarkerInfo> markers){}
 

@@ -18,7 +18,7 @@ public:
 	CylinderTag(const Mat1i& set_state);
 
     // Marker Detector
-    void detect(const Mat& img, vector<MarkerInfo> cornerList, int adaptiveThresh = 5, const bool cornerSubPix = false, int cornerSubPixDist = 3);
+    void detect(const Mat& img, vector<MarkerInfo>& cornerList, int adaptiveThresh = 5, const bool cornerSubPix = false, int cornerSubPixDist = 3);
 
     // Load reconstructed model
     void loadModel(const string& path, vector<ModelInfo> reconstruct_model);
@@ -33,7 +33,9 @@ private:
     corner_detector detector;
     
     vector<vector<Point>> quadAreas_labeled;
-    vector<Point2f> corners;
+    vector<vector<Point2f>> corners;
+    vector<vector<Point2f>> corners_refined;
+    vector<featureInfo> features;
     
     Mat1i state;
 

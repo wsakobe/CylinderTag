@@ -33,17 +33,17 @@ public:
     
     void connectedComponentLabeling(const Mat& src, vector<vector<Point>>& quadArea, int method = 0);
     
-    void edgeExtraction(const Mat& img, vector<vector<Point>>& quadArea, vector<Point2f>& corners_init, int KMeansIter = 5);
+    void edgeExtraction(const Mat& img, vector<vector<Point>>& quadArea, vector<vector<Point2f>>& corners_init, int KMeansIter = 5);
     
     bool quadJudgment(vector<corners_pre> corners, int areaPixelNumber);
 
-    void edgeSubPix(const Mat& src, vector<Point2f> corners_init, vector<Point2f> corners_refined, int subPixWindow);
+    void edgeSubPix(const Mat& src, vector<vector<Point2f>> corners_init, vector<vector<Point2f>>& corners_refined, int subPixWindow);
 
     bool parallelogramJudgment(vector<Point2f> corners);
 
     void featureRecovery(vector<vector<Point2f>> corners_refined, vector<featureInfo> features);
 
-    void featureExtraction(const Mat& img, vector<vector<Point2f>> feature_src, vector<featureInfo> feature_dst);
+    void featureExtraction(const Mat& img, vector<featureInfo> feature_src, vector<featureInfo> feature_dst);
 
     void markerOrganization(vector<featureInfo> feature, vector<MarkerInfo> markers);
 
@@ -84,6 +84,13 @@ private:
     Point2f corner_center;
     float diff_percentage = 0.02, dist_to_center[4];
     float coeff_1, coeff_2;
+
+    // Feature recovery
+    vector<Point2f> corner_centers;
+    vector<array<float, 4>> corner_dist;
+    vector<float> corner_angles_1, corner_angles_2;
+    float feature_angle, threshold_angle = 5;
+    bool isVisited[1000], tag1, tag2;
 };
 
 #endif
