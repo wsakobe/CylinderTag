@@ -236,7 +236,18 @@ void corner_detector::edgeSubPix(const Mat& src, vector<Point2f> corners_init, v
 }
 
 bool corner_detector::parallelogramJudgment(vector<Point2f> corners){
-    return true;
+    moment = moments(corners);
+    if (moment.m00 != 0){
+        corner_center.x = moment.m10 / moment.m00;
+        corner_center.y = moment.m01 / moment.m00;
+    }
+    for (int i = 0; i < 4; i++){
+        dist_to_center[i] = sqrt((corner_center.x - corners[i].x) * (corner_center.x - corners[i].x) + (corner_center.y - corners[i].y) * (corner_center.y - corners[i].y));
+    }
+    coeff_1 = abs(dist_to_center[0] - dist_to_center[2]) / (dist_to_center[0] + dist_to_center[2]);
+    coeff_2 = abs(dist_to_center[1] - dist_to_center[3]) / (dist_to_center[1] + dist_to_center[3]);
+    if (coeff_1 < diff_percentage && coeff_2 < diff_percentage) return true;
+    return false;
 }
 
 void corner_detector::featureRecovery(vector<vector<Point2f>> corners_refined, vector<featureInfo> features){}

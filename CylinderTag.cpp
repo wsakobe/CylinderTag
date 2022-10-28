@@ -70,7 +70,7 @@ void CylinderTag::check_dictionary(const Mat1i& input_state)
 void CylinderTag::detect(const Mat& img, vector<MarkerInfo> cornerList, int adaptiveThresh, const bool cornerSubPix, int cornerSubPixDist){
     Mat img_resize;
     resize(img, img_resize, Size(img.cols / 2, img.rows / 2));
-    img_resize.convertTo(img_resize, CV_64FC1, 1.0 / 255);
+    img_resize.convertTo(img_resize, CV_32FC1, 1.0 / 255);
 
     Mat img_binary(img_resize.rows, img_resize.cols, CV_8UC1);
     detector.adaptiveThreshold(img_resize, img_binary, adaptiveThresh);
@@ -80,6 +80,8 @@ void CylinderTag::detect(const Mat& img, vector<MarkerInfo> cornerList, int adap
     if (cornerSubPix){
        // detector.edgeSubPix(img, corners, corners, cornerSubPixDist);
     }
+
+    //detector.featureExtraction(img, corners, )
 }
 
 void CylinderTag::loadModel(const string& path, vector<ModelInfo> reconstruct_model){
