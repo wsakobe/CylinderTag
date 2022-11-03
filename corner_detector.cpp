@@ -277,7 +277,8 @@ void corner_detector::featureRecovery(vector<vector<Point2f>>& corners_refined, 
             sum_x += corners_refined[i][j].x;
             sum_y += corners_refined[i][j].y;
         }
-        corner_centers.push_back((Point2f)(sum_x / corners_refined[i].size(), sum_y / corners_refined[i].size()));
+        Point2f center_ = Point2f(sum_x * 1.0 / corners_refined[i].size(), sum_y * 1.0 / corners_refined[i].size());
+        corner_centers.push_back(center_);
         for (int j = 0; j < 4; j++){
             corner_dist[i][j] = sqrt((corners_refined[i][j].x - corners_refined[i][(j + 1) % 4].x) * (corners_refined[i][j].x - corners_refined[i][(j + 1) % 4].x) + (corners_refined[i][j].y - corners_refined[i][(j + 1) % 4].y) * (corners_refined[i][j].y - corners_refined[i][(j + 1) % 4].y));
         }
@@ -311,14 +312,15 @@ void corner_detector::featureRecovery(vector<vector<Point2f>>& corners_refined, 
                     dist2_long = (corner_dist[j][1] + corner_dist[j][3]) / 2;
                 }
 
-                if (tag1 && tag2) && (dist1_long > dist1_short || dist2_long > dist2_short)
+                if ((tag1 && tag2) && (dist1_long > dist1_short || dist2_long > dist2_short)
                     && (feature_half_length - (dist1_long + dist2_long) / 2 < 1.5 * (dist1_short + dist2_short))
                     && (abs(dist1_short - dist2_short) < min(dist1_short, dist2_short) * 0.2)
-                    && (dist1_long + dist2_long > 2 * (dist1_short + dist2_short))
+                    && (dist1_long + dist2_long > 2 * (dist1_short + dist2_short)))
                 {
                     isVisited[i] = true;
                     isVisited[j] = true;
                     features.push_back(featureOrganization(corners_refined[i], corners_refined[j], corner_centers[i], corner_centers[j], feature_angle));
+                    j = corners_refined.size();
                 }
             }
         }
@@ -326,12 +328,40 @@ void corner_detector::featureRecovery(vector<vector<Point2f>>& corners_refined, 
 }
 
 featureInfo corner_detector::featureOrganization(vector<Point2f> quad1, vector<Point2f> quad2, Point2f quad1_center, Point2f quad2_center, float feature_angle){
+    float angle_max = 0, angle_min = 360;
+    int pos_quad1 = -1, pos_quad2 = -1;
+    Fea.corners.clear();
     Fea.ID = -1;
     Fea.feature_angle = feature_angle;
-    middle_pos = 
+    for (int i = 0; i < 4; i++){
+        angle_quad1[i] = atan2(quad1_center.y - quad1[i].y, quad1_center.x - quad1[i].x) * 180 / CV_PI;
+        angle_quad2[i] = atan2(quad2_center.y - quad2[i].y, quad2_center.x - quad2[i].x) * 180 / CV_PI;
+    }    
+    for (int i = 0; i < 4; i++){
+        if (abs(angle_quad1[(i + 2) % 4] - feature_angle) + abs(angle_quad1[(i + 3) % 4] - feature_angle) < angle_min){
+            angle_min = abs(angle_quad1[(i + 2) % 4] - feature_angle) + abs(angle_quad1[(i + 3) % 4] - feature_angle);
+            pos_quad1 = i;
+        }
+        if (abs(angle_quad2[(i + 2) % 4] - feature_angle) + abs(angle_quad2[(i + 3) % 4] - feature_angle) > angle_max){
+            angle_max = abs(angle_quad2[(i + 2) % 4] - feature_angle) + abs(angle_quad2[(i + 3) % 4] - feature_angle);
+            pos_quad2 = i;
+        }
+    }
+    for (int i = 0; i < 4; i++){
+        Fea.corners.push_back(quad1[(i + pos_quad1) % 4]);
+    }
+    for (int i = 0; i < 4; i++){
+        Fea.corners.push_back(quad2[(i + pos_quad2) % 4]);
+    }
+    Fea.feature_center = Point2f((Fea.corners[0].x + Fea.corners[1].x + Fea.corners[4].x + Fea.corners[5].x) / 4, (Fea.corners[0].y + Fea.corners[1].y + Fea.corners[4].y + Fea.corners[5].y) / 4);
+    return Fea;
 }
 
-void corner_detector::featureExtraction(const Mat& img, vector<featureInfo> feature_src, vector<featureInfo> feature_dst){}
+void corner_detector::featureExtraction(const Mat& img, vector<featureInfo> feature_src, vector<featureInfo> feature_dst){
+    for (int i = 0; i < feature_src.size(); i++){
+        
+    }
+}
 
 void corner_detector::markerOrganization(vector<featureInfo> feature, vector<MarkerInfo> markers){}
 
