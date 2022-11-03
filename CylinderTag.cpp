@@ -68,9 +68,15 @@ void CylinderTag::check_dictionary(const Mat1i& input_state)
 }
 
 void CylinderTag::detect(const Mat& img, vector<MarkerInfo>& cornerList, int adaptiveThresh, const bool cornerSubPix, int cornerSubPixDist){
+	
+
     Mat img_resize;
     resize(img, img_resize, Size(img.cols / 2, img.rows / 2));
     img_resize.convertTo(img_resize, CV_32FC1, 1.0 / 255);
+
+	// Display
+    Mat imgMark(img_resize.rows, img_resize.cols, CV_32FC3);
+    cvtColor(img_resize, imgMark, COLOR_GRAY2RGB);
 
     Mat img_binary(img_resize.rows, img_resize.cols, CV_8UC1);
     detector.adaptiveThreshold(img_resize, img_binary, adaptiveThresh);
@@ -82,6 +88,21 @@ void CylinderTag::detect(const Mat& img, vector<MarkerInfo>& cornerList, int ada
     }
 
     detector.featureRecovery(corners, features);
+
+	for (int i = 0; i < features.size(); i++){
+        line(imgMark, features[i].corners[0], features[i].corners[1], Scalar(255, 241, 67), 1);
+        line(imgMark, features[i].corners[1], features[i].corners[2], Scalar(255, 241, 67), 1);
+        line(imgMark, features[i].corners[2], features[i].corners[7], Scalar(255, 241, 67), 1);
+        line(imgMark, features[i].corners[7], features[i].corners[4], Scalar(255, 241, 67), 1);
+        line(imgMark, features[i].corners[4], features[i].corners[5], Scalar(255, 241, 67), 1);
+        line(imgMark, features[i].corners[5], features[i].corners[6], Scalar(255, 241, 67), 1);
+        line(imgMark, features[i].corners[6], features[i].corners[3], Scalar(255, 241, 67), 1);
+        line(imgMark, features[i].corners[3], features[i].corners[0], Scalar(255, 241, 67), 1);
+        circle(imgMark, features[i].feature_center, 2, Scalar(75, 92, 196));
+    }
+    imshow("Feature Organization", imgMark);
+    waitKey(0);
+
     detector.featureExtraction(img, features, features);
 }
 

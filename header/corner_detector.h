@@ -97,7 +97,7 @@ private:
 
     // Feature organization
     featureInfo Fea;
-    float middle_pos;
+    float middle_pos, angle_quad1[4], angle_quad2[4];
 };
 
 #endif
