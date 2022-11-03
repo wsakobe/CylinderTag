@@ -11,7 +11,7 @@ struct featureInfo{
     vector<Point2f> corners;
     int ID = -1;
     Point2f feature_center;
-    double feature_angle;
+    float feature_angle;
 };
 
 struct MarkerInfo{
@@ -35,13 +35,15 @@ public:
     
     void edgeExtraction(const Mat& img, vector<vector<Point>>& quadArea, vector<vector<Point2f>>& corners_init, int KMeansIter = 5);
     
-    bool quadJudgment(vector<corners_pre> corners, int areaPixelNumber);
+    bool quadJudgment(vector<corners_pre>& corners, int areaPixelNumber);
 
-    void edgeSubPix(const Mat& src, vector<vector<Point2f>> corners_init, vector<vector<Point2f>>& corners_refined, int subPixWindow);
+    void edgeSubPix(const Mat& src, vector<vector<Point2f>>& corners_init, vector<vector<Point2f>>& corners_refined, int subPixWindow);
 
     bool parallelogramJudgment(vector<Point2f> corners);
 
-    void featureRecovery(vector<vector<Point2f>> corners_refined, vector<featureInfo> features);
+    void featureRecovery(vector<vector<Point2f>>& corners_refined, vector<featureInfo>& features);
+    
+    featureInfo featureOrganization(vector<Point2f> quad1, vector<Point2f> quad2, Point2f quad1_center, Point2f quad2_center, float feature_angle);
 
     void featureExtraction(const Mat& img, vector<featureInfo> feature_src, vector<featureInfo> feature_dst);
 
@@ -60,7 +62,7 @@ private:
     int nccomp_area = 0;
 
     // Edge extraction use
-    Moments moment;
+    long long sum_x, sum_y;
     vector<float> edge_angle;
     array<vector<float>, 4> edge_angle_cluster, line_func;
     vector<Point> edge_point;
@@ -75,7 +77,8 @@ private:
 
     // Quad judgment
     float quad_area, RAC;
-    float threshold_RAC = 10000;
+    float threshold_RAC = 0.5;
+    vector<Point2f> corners_pass;
 
     // Edge refinement use
 
@@ -89,8 +92,12 @@ private:
     vector<Point2f> corner_centers;
     vector<array<float, 4>> corner_dist;
     vector<float> corner_angles_1, corner_angles_2;
-    float feature_angle, threshold_angle = 5;
+    float feature_angle, feature_half_length, threshold_angle = 5, dist1_short, dist1_long, dist2_short, dist2_long;
     bool isVisited[1000], tag1, tag2;
+
+    // Feature organization
+    featureInfo Fea;
+    float middle_pos;
 };
 
 #endif

@@ -127,6 +127,8 @@ void corner_detector::edgeExtraction(const Mat& img, vector<vector<Point>>& quad
     for (int i = 0; i < quadArea.size(); i++){
         flag_line_number = false;
         flag_illegal_corner = false;
+        sum_x = 0; 
+        sum_y = 0;
 
         edge_angle.clear();
         edge_point.clear();
@@ -139,12 +141,13 @@ void corner_detector::edgeExtraction(const Mat& img, vector<vector<Point>>& quad
         Mat A(2, 2, CV_32FC1);
         Mat B(2, 1, CV_32FC1);
         Mat sol(2, 1, CV_32FC1);
-
-        moment = moments(quadArea[i]);
-        if (moment.m00 != 0){
-            area_center.x = moment.m10 / moment.m00;
-            area_center.y = moment.m01 / moment.m00;
+        
+        for (int j = 0; j < quadArea[i].size(); j++){
+            sum_x += quadArea[i][j].x;
+            sum_y += quadArea[i][j].y;
         }
+        area_center.x = sum_x / quadArea[i].size();
+        area_center.y = sum_y / quadArea[i].size();
         
         for (int j = 0; j < 4; j++){
             edge_angle_cluster[j].clear();
@@ -187,7 +190,7 @@ void corner_detector::edgeExtraction(const Mat& img, vector<vector<Point>>& quad
                     c.intersect.x = sol.at<float>(0, 0);
                     c.intersect.y = sol.at<float>(1, 0);
                     c.dis_to_centroid = sqrt((c.intersect.x - area_center.x) * (c.intersect.x - area_center.x) + (c.intersect.y - area_center.y) * (c.intersect.y - area_center.y));
-                    c.angle_to_centroid = atan2(c.intersect.y - area_center.y, c.intersect.x - area_center.x);
+                    c.angle_to_centroid = atan2(c.intersect.y - area_center.y, c.intersect.x - area_center.x) * 180 / CV_PI;
                     if (c.dis_to_centroid < img.cols && c.dis_to_centroid < img.rows)
                         corners_p.push_back(c);
                 }
@@ -197,29 +200,33 @@ void corner_detector::edgeExtraction(const Mat& img, vector<vector<Point>>& quad
         sort(corners_p.begin(), corners_p.end(), cmp_dis);
         corners_p.resize(4);
         sort(corners_p.begin(), corners_p.end(), cmp_ang);
+        
+        if (!quadJudgment(corners_p, quadArea[i].size())) continue;
         for (int j = 0; j < 4; j++){
-            if (corners_p[j].intersect.x < 0 || corners_p[j].intersect.y < 0 || corners_p[j].intersect.x > img.cols || corners_p[j].intersect.y > img.rows || !quadJudgment(corners_p, quadArea[i].size())){
+            if (corners_p[j].intersect.x < 0 || corners_p[j].intersect.y < 0 || corners_p[j].intersect.x > img.cols || corners_p[j].intersect.y > img.rows){
                 flag_illegal_corner = true;
                 break;
             }
         }
         if (flag_illegal_corner) continue;
+        corners_pass.clear();
         for (int j = 0; j < 4; j++){
-            corners_init[i].push_back(corners_p[j].intersect);
+            corners_pass.push_back(corners_p[j].intersect);
         }
+        corners_init.push_back(corners_pass);
+
         for (int j = 0; j < quadArea[i].size(); j++){
             circle(imgMark, quadArea[i][j], 1, Scalar(0, 250, 0), -1);
         }
-        for (int j = 0; j < corners_init.size(); j++){
-            circle(imgMark, corners_init[j], 1, Scalar(120, 150, 0), -1);
+        for (int j = 0; j < corners_p.size(); j++){
+            circle(imgMark, corners_p[j].intersect, 3, Scalar(120, 150, 0), -1);
         }
-        
-    }
-    imshow("corners initial", imgMark);
-    waitKey(0);
+    }    
+    // imshow("corners initial", imgMark);
+    // waitKey(0);
 }
 
-bool corner_detector::quadJudgment(vector<corners_pre> corners, int areaPixelNumber){
+bool corner_detector::quadJudgment(vector<corners_pre>& corners, int areaPixelNumber){
     quad_area = 0;
     for (int i = 0; i < 3; i++){
         quad_area += corners[i].intersect.x * corners[i + 1].intersect.y - corners[i].intersect.y * corners[i + 1].intersect.x; 
@@ -227,6 +234,7 @@ bool corner_detector::quadJudgment(vector<corners_pre> corners, int areaPixelNum
     quad_area += corners[3].intersect.x * corners[0].intersect.y - corners[3].intersect.y * corners[0].intersect.x; 
     quad_area /= 2;
     RAC = abs(abs(quad_area) - areaPixelNumber) / areaPixelNumber;
+
     if (RAC > threshold_RAC) return false;
     return true;    
 }
@@ -236,11 +244,14 @@ void corner_detector::edgeSubPix(const Mat& src, vector<vector<Point2f>>& corner
 }
 
 bool corner_detector::parallelogramJudgment(vector<Point2f> corners){
-    moment = moments(corners);
-    if (moment.m00 != 0){
-        corner_center.x = moment.m10 / moment.m00;
-        corner_center.y = moment.m01 / moment.m00;
+    sum_x = 0, sum_y = 0;
+    for (int j = 0; j < corners.size(); j++){
+        sum_x += corners[j].x;
+        sum_y += corners[j].y;
     }
+    corner_center.x = sum_x / corners.size();
+    corner_center.y = sum_y / corners.size();
+
     for (int i = 0; i < 4; i++){
         dist_to_center[i] = sqrt((corner_center.x - corners[i].x) * (corner_center.x - corners[i].x) + (corner_center.y - corners[i].y) * (corner_center.y - corners[i].y));
     }
@@ -250,7 +261,7 @@ bool corner_detector::parallelogramJudgment(vector<Point2f> corners){
     return false;
 }
 
-void corner_detector::featureRecovery(vector<vector<Point2f>>& corners_refined, vector<featureInfo> features){
+void corner_detector::featureRecovery(vector<vector<Point2f>>& corners_refined, vector<featureInfo>& features){
     memset(isVisited, false, sizeof(isVisited));
     tag1 = false;
     tag2 = false;
@@ -261,10 +272,12 @@ void corner_detector::featureRecovery(vector<vector<Point2f>>& corners_refined, 
     corner_angles_2.clear();
     
     for (int i = 0; i < corners_refined.size() - 1; i++){
-        moment = moments(corners_refined[i]);
-        if (moment.m00 != 0){
-            corner_centers.push_back(Point2f(moment.m10 / moment.m00, moment.m01 / moment.m00));
+        sum_x = 0, sum_y = 0;
+        for (int j = 0; j < corners_refined[i].size(); j++){
+            sum_x += corners_refined[i][j].x;
+            sum_y += corners_refined[i][j].y;
         }
+        corner_centers.push_back((Point2f)(sum_x / corners_refined[i].size(), sum_y / corners_refined[i].size()));
         for (int j = 0; j < 4; j++){
             corner_dist[i][j] = sqrt((corners_refined[i][j].x - corners_refined[i][(j + 1) % 4].x) * (corners_refined[i][j].x - corners_refined[i][(j + 1) % 4].x) + (corners_refined[i][j].y - corners_refined[i][(j + 1) % 4].y) * (corners_refined[i][j].y - corners_refined[i][(j + 1) % 4].y));
         }
@@ -276,10 +289,46 @@ void corner_detector::featureRecovery(vector<vector<Point2f>>& corners_refined, 
         for (int j = i + 1; j < corners_refined.size(); j++){
             if (!isVisited[j]){
                 feature_angle = atan2(corner_centers[i].y - corner_centers[j].y, corner_centers[i].x - corner_centers[j].x) * 180 / CV_PI;
-                
+                feature_half_length = sqrt((corner_centers[i].y - corner_centers[j].y) * (corner_centers[i].y - corner_centers[j].y) + (corner_centers[i].x - corner_centers[j].x) * (corner_centers[i].x - corner_centers[j].x));
+                if (abs(feature_angle - corner_angles_1[i]) < threshold_angle || abs(abs(feature_angle - corner_angles_1[i]) - 180) < threshold_angle){
+                    tag1 = true;
+                    dist1_long = (corner_dist[i][0] + corner_dist[i][2]) / 2;
+                    dist1_short = (corner_dist[i][1] + corner_dist[i][3]) / 2;
+                }
+                if (abs(feature_angle - corner_angles_2[i]) < threshold_angle || abs(abs(feature_angle - corner_angles_2[i]) - 180) < threshold_angle){
+                    tag1 = true;
+                    dist1_short = (corner_dist[i][0] + corner_dist[i][2]) / 2;
+                    dist1_long = (corner_dist[i][1] + corner_dist[i][3]) / 2;
+                }
+                if (abs(feature_angle - corner_angles_1[j]) < threshold_angle || abs(abs(feature_angle - corner_angles_1[j]) - 180) < threshold_angle){
+                    tag2 = true;
+                    dist2_long = (corner_dist[j][0] + corner_dist[j][2]) / 2;
+                    dist2_short = (corner_dist[j][1] + corner_dist[j][3]) / 2;
+                }
+                if (abs(feature_angle - corner_angles_2[j]) < threshold_angle || abs(abs(feature_angle - corner_angles_2[j]) - 180) < threshold_angle){
+                    tag2 = true;
+                    dist2_short = (corner_dist[j][0] + corner_dist[j][2]) / 2;
+                    dist2_long = (corner_dist[j][1] + corner_dist[j][3]) / 2;
+                }
+
+                if (tag1 && tag2) && (dist1_long > dist1_short || dist2_long > dist2_short)
+                    && (feature_half_length - (dist1_long + dist2_long) / 2 < 1.5 * (dist1_short + dist2_short))
+                    && (abs(dist1_short - dist2_short) < min(dist1_short, dist2_short) * 0.2)
+                    && (dist1_long + dist2_long > 2 * (dist1_short + dist2_short))
+                {
+                    isVisited[i] = true;
+                    isVisited[j] = true;
+                    features.push_back(featureOrganization(corners_refined[i], corners_refined[j], corner_centers[i], corner_centers[j], feature_angle));
+                }
             }
         }
     }
+}
+
+featureInfo corner_detector::featureOrganization(vector<Point2f> quad1, vector<Point2f> quad2, Point2f quad1_center, Point2f quad2_center, float feature_angle){
+    Fea.ID = -1;
+    Fea.feature_angle = feature_angle;
+    middle_pos = 
 }
 
 void corner_detector::featureExtraction(const Mat& img, vector<featureInfo> feature_src, vector<featureInfo> feature_dst){}
