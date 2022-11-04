@@ -13,7 +13,7 @@ void read_from_video(const string& path);
 void read_online();
 
 int main(int argc, char** argv){
-	read_from_image(".\\Data\\22.bmp");
+	read_from_image(".\\Data\\33.bmp");
 	//read_from_video(".\\Data\\result4.avi");
 		
 	system("pause");

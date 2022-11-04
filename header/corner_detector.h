@@ -98,6 +98,11 @@ private:
     // Feature organization
     featureInfo Fea;
     float middle_pos, angle_quad1[4], angle_quad2[4];
+
+    // Feature extraction
+    float distance_2points(Point2f point1, Point2f point2);
+    float cross_ratio_1, cross_ratio_2, length_1[4], length_2[4];
+    bool label_area, label_instruct;
 };
 
 #endif
