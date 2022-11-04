@@ -240,7 +240,12 @@ bool corner_detector::quadJudgment(vector<corners_pre>& corners, int areaPixelNu
 }
 
 void corner_detector::edgeSubPix(const Mat& src, vector<vector<Point2f>>& corners_init, vector<vector<Point2f>>& corners_refined, int subPixWindow){
-    
+    corners_refined = corners_init;
+    for (int i = 0; i < corners_init.size(); i++){
+        for (int j = 0; j < corners_init[i].size(); j++){
+            corners_refined[i][j] *= 2; 
+        }
+    }
 }
 
 bool corner_detector::parallelogramJudgment(vector<Point2f> corners){
@@ -263,15 +268,13 @@ bool corner_detector::parallelogramJudgment(vector<Point2f> corners){
 
 void corner_detector::featureRecovery(vector<vector<Point2f>>& corners_refined, vector<featureInfo>& features){
     memset(isVisited, false, sizeof(isVisited));
-    tag1 = false;
-    tag2 = false;
-
+    
     corner_dist.resize(corners_refined.size());
     corner_centers.clear();
     corner_angles_1.clear();
     corner_angles_2.clear();
     
-    for (int i = 0; i < corners_refined.size() - 1; i++){
+    for (int i = 0; i < corners_refined.size(); i++){
         sum_x = 0, sum_y = 0;
         for (int j = 0; j < corners_refined[i].size(); j++){
             sum_x += corners_refined[i][j].x;
@@ -289,6 +292,8 @@ void corner_detector::featureRecovery(vector<vector<Point2f>>& corners_refined, 
         if (isVisited[i]) continue;
         for (int j = i + 1; j < corners_refined.size(); j++){
             if (!isVisited[j]){
+                tag1 = false;
+                tag2 = false;
                 feature_angle = atan2(corner_centers[i].y - corner_centers[j].y, corner_centers[i].x - corner_centers[j].x) * 180 / CV_PI;
                 feature_half_length = sqrt((corner_centers[i].y - corner_centers[j].y) * (corner_centers[i].y - corner_centers[j].y) + (corner_centers[i].x - corner_centers[j].x) * (corner_centers[i].x - corner_centers[j].x));
                 if (abs(feature_angle - corner_angles_1[i]) < threshold_angle || abs(abs(feature_angle - corner_angles_1[i]) - 180) < threshold_angle){
@@ -338,12 +343,12 @@ featureInfo corner_detector::featureOrganization(vector<Point2f> quad1, vector<P
         angle_quad2[i] = atan2(quad2_center.y - quad2[i].y, quad2_center.x - quad2[i].x) * 180 / CV_PI;
     }    
     for (int i = 0; i < 4; i++){
-        if (abs(angle_quad1[(i + 2) % 4] - feature_angle) + abs(angle_quad1[(i + 3) % 4] - feature_angle) < angle_min){
-            angle_min = abs(angle_quad1[(i + 2) % 4] - feature_angle) + abs(angle_quad1[(i + 3) % 4] - feature_angle);
+        if (min(360 - abs(angle_quad1[(i + 2) % 4] - feature_angle), abs(angle_quad1[(i + 2) % 4] - feature_angle)) + min(360 - abs(angle_quad1[(i + 3) % 4] - feature_angle), abs(angle_quad1[(i + 3) % 4] - feature_angle)) < angle_min){
+            angle_min = min(360 - abs(angle_quad1[(i + 2) % 4] - feature_angle), abs(angle_quad1[(i + 2) % 4] - feature_angle)) + min(360 - abs(angle_quad1[(i + 3) % 4] - feature_angle), abs(angle_quad1[(i + 3) % 4] - feature_angle));
             pos_quad1 = i;
         }
-        if (abs(angle_quad2[(i + 2) % 4] - feature_angle) + abs(angle_quad2[(i + 3) % 4] - feature_angle) > angle_max){
-            angle_max = abs(angle_quad2[(i + 2) % 4] - feature_angle) + abs(angle_quad2[(i + 3) % 4] - feature_angle);
+        if (min(360 - abs(angle_quad2[(i + 2) % 4] - feature_angle), abs(angle_quad2[(i + 2) % 4] - feature_angle)) + min(360 - abs(angle_quad2[(i + 3) % 4] - feature_angle), abs(angle_quad2[(i + 3) % 4] - feature_angle)) > angle_max){
+            angle_max = min(360 - abs(angle_quad2[(i + 2) % 4] - feature_angle), abs(angle_quad2[(i + 2) % 4] - feature_angle)) + min(360 - abs(angle_quad2[(i + 3) % 4] - feature_angle), abs(angle_quad2[(i + 3) % 4] - feature_angle));
             pos_quad2 = i;
         }
     }
@@ -359,10 +364,27 @@ featureInfo corner_detector::featureOrganization(vector<Point2f> quad1, vector<P
 
 void corner_detector::featureExtraction(const Mat& img, vector<featureInfo> feature_src, vector<featureInfo> feature_dst){
     for (int i = 0; i < feature_src.size(); i++){
-        
+        length_1[0] = distance_2points(feature_src[i].corners[0], feature_src[i].corners[3]);
+        length_1[1] = distance_2points(feature_src[i].corners[3], feature_src[i].corners[6]);
+        length_1[2] = distance_2points(feature_src[i].corners[6], feature_src[i].corners[5]);
+        length_1[3] = distance_2points(feature_src[i].corners[0], feature_src[i].corners[5]);
+        length_2[0] = distance_2points(feature_src[i].corners[1], feature_src[i].corners[2]);
+        length_2[1] = distance_2points(feature_src[i].corners[2], feature_src[i].corners[7]);
+        length_2[2] = distance_2points(feature_src[i].corners[7], feature_src[i].corners[4]);
+        length_2[3] = distance_2points(feature_src[i].corners[1], feature_src[i].corners[4]);
+
+        cross_ratio_1 = (length_1[0] + length_1[1]) * (length_1[2] + length_1[1]) / ((length_1[1] * length_1[3]));
+        cross_ratio_2 = (length_2[0] + length_2[1]) * (length_2[2] + length_2[1]) / ((length_2[1] * length_2[3]));
+        cout << "No." << i << " CR: " << cross_ratio_1 << " " << cross_ratio_2 << endl;
     }
 }
 
-void corner_detector::markerOrganization(vector<featureInfo> feature, vector<MarkerInfo> markers){}
+float corner_detector::distance_2points(Point2f point1, Point2f point2){
+    return sqrt((point1.x - point2.x) * (point1.x - point2.x) + (point1.y - point2.y) * (point1.y - point2.y));
+}
+
+void corner_detector::markerOrganization(vector<featureInfo> feature, vector<MarkerInfo> markers){
+    
+}
 
 void corner_detector::markerDecoder(vector<MarkerInfo> markers_src, vector<MarkerInfo> markers_dst){}
