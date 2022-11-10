@@ -379,12 +379,103 @@ void corner_detector::featureExtraction(const Mat& img, vector<featureInfo> feat
     }
 }
 
+void corner_detector::markerOrganization(vector<featureInfo> feature, vector<MarkerInfo> markers){
+    for (int i = 0; i < feature.size(); i++){
+        father[i] = i;
+    }
+    for (int i = 0; i < feature.size() - 1; i++){
+        for (int j = i + 1; j < feature.size(); j++){
+            vector_center = feature[i].feature_center - feature[j].feature_center;
+            vector_longedge = feature[i].corners[0] - feature[i].corners[5];
+            center_angle = (vector_center.x * vector_longedge.x + vector_center.y * vector_longedge.y) / sqrt((vector_center.x * vector_center.x + vector_center.y * vector_center.y) * (vector_longedge.x * vector_longedge.x + vector_longedge.y * vector_longedge.y));
+            cout << i << " " << j << " " << center_angle << endl;
+            if ((abs(feature[i].feature_angle - feature[j].feature_angle) < threshold_angle) && (abs(area(feature[i]) - area(feature[j])) < area_ratio * min(area(feature[i]), area(feature[j]))) && (distance_2points(feature[i].feature_center, feature[j].feature_center) < area(feature[i]) + area(feature[j])) && (abs(center_angle) < threshold_vertical)){
+                father[j] = union_find(i);
+            }
+        }
+    }
+
+    father_database.clear();
+    cnt = 0;
+    vector<vector<int>> marker_ID(feature.size());
+    father_database.push_back(father[0]);
+    marker_ID[cnt++].push_back(0);
+    
+    for (int i = 1; i < feature.size(); i++){
+        find_father = false;
+        for (int j = 0; j < father_database.size(); j++){
+            if (father[i] == father_database[j]){
+                marker_ID[j].push_back(i);    
+                find_father = true;
+                break;
+            }
+        }
+        if (!find_father){
+            father_database.push_back(father[i]);
+            marker_ID[cnt++].push_back(i);
+        }        
+    }
+    markers.clear();
+    for (int i = 0; i < cnt; i++){
+        MarkerInfo mark;
+        for (int j = 0; j < marker_ID[i].size(); j++){
+            for (int k = 0; k < 8; k++)
+                mark.cornerLists[j][k] = feature[marker_ID[i][j]].corners.at(k);
+            mark.feature_center.push_back(feature[marker_ID[i][j]].feature_center);
+            mark.edge_length.push_back(distance_2points(feature[marker_ID[i][j]].corners[0], feature[marker_ID[i][j]].corners[1]));
+            mark.feature_ID.push_back(feature[marker_ID[i][j]].ID);
+        } 
+        markers.push_back(mark);
+    }
+}
+
+bool cmp_x(Point2f& a, Point2f& b){
+    return a.x < b.x;
+}
+
+bool cmp_y(Point2f& a, Point2f& b){
+    return a.y < b.y;
+}
+
+void corner_detector::markerDecoder(vector<MarkerInfo> markers_src, vector<MarkerInfo> markers_dst, Mat1i& state){
+    for (int i = 0; i < markers_src.size(); i++){
+        marker_angle = atan2(markers_src[i].feature_center[0].y - markers_src[i].feature_center[1].y, markers_src[i].feature_center[0].x - markers_src[i].feature_center[1].x) * 180 / CV_PI;
+        if (abs(marker_angle) > 45 || abs(marker_angle) < 135){
+            sort(markers_src[i].feature_center.begin(), markers_src[i].feature_center.end(), cmp_x);
+        }
+        else{
+            sort(markers_src[i].feature_center.begin(), markers_src[i].feature_center.end(), cmp_y);
+        }
+        code[0] = markers_src[i].feature_ID[0];
+        for (int j = 1; j < markers_src[i].feature_center.size(); j++){
+            float dist = distance_2points(markers_src[i].feature_center[j], markers_src[i].feature_center[j - 1]);
+            float gap_dist = dist - (markers_src[i].edge_length[j] + markers_src[i].edge_length[j - 1]) / 2;
+            int gap = round((gap_dist - (markers_src[i].edge_length[j] + markers_src[i].edge_length[j - 1]) / 4) / (3 * (markers_src[i].edge_length[j] + markers_src[i].edge_length[j - 1]) / 4));
+            code[gap + 1] = markers_src[i].feature_ID[j];
+        }
+        
+        Pos_ID = match_dictionary(code, state);
+    }
+}
+
 float corner_detector::distance_2points(Point2f point1, Point2f point2){
     return sqrt((point1.x - point2.x) * (point1.x - point2.x) + (point1.y - point2.y) * (point1.y - point2.y));
 }
 
-void corner_detector::markerOrganization(vector<featureInfo> feature, vector<MarkerInfo> markers){
-    
+int corner_detector::union_find(int x){
+    return x == father[x] ? x : (father[x] = union_find(father[x]));
 }
 
-void corner_detector::markerDecoder(vector<MarkerInfo> markers_src, vector<MarkerInfo> markers_dst){}
+float corner_detector::area(featureInfo feature){
+    float feature_area = 0;
+    for (int i = 0; i < 4; i++){
+        feature_area += feature.corners[pose[i]].x * feature.corners[pose[(i + 1) % 4]].y - feature.corners[pose[i]].y * feature.corners[pose[(i + 1) % 4]].x; 
+    }
+    feature_area /= 2;
+    return abs(feature_area);
+}
+
+pos_with_ID corner_detector::match_dictionary(int *code, Mat1i& state){
+    pos_with_ID POS_ID;
+    return POS_ID;
+}

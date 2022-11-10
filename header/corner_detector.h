@@ -16,15 +16,21 @@ struct featureInfo{
 
 struct MarkerInfo{
     int markerID = -1;
-    vector<int> featureID;
-    vector<int> featurePos;
+    vector<int> featurePos, feature_ID;
     vector<array<Point2f, 8>> cornerLists;
+    vector<Point2f> feature_center;
+    vector<float> edge_length;
 };
 
 struct corners_pre{
     Point2f intersect;
     float dis_to_centroid;
     float angle_to_centroid;
+};
+
+struct pos_with_ID{
+    vector<int> pos;
+    int ID = -1;
 };
 
 class corner_detector{
@@ -49,7 +55,7 @@ public:
 
     void markerOrganization(vector<featureInfo> feature, vector<MarkerInfo> markers);
 
-    void markerDecoder(vector<MarkerInfo> markers_src, vector<MarkerInfo> markers_dst);
+    void markerDecoder(vector<MarkerInfo> markers_src, vector<MarkerInfo> markers_dst, Mat1i& state);
 
 private:
     // Adaptive threshold use
@@ -103,6 +109,23 @@ private:
     float distance_2points(Point2f point1, Point2f point2);
     float cross_ratio_1, cross_ratio_2, length_1[4], length_2[4];
     bool label_area, label_instruct;
+
+    // Marker organization
+    int union_find(int input);
+    float area(featureInfo feature);
+    int father[100];
+    float area_ratio = 0.1, threshold_vertical = 0.5, center_angle;
+    Point2f vector_center, vector_longedge;
+    int pose[4] = {0, 1, 4, 5}, cnt;
+    vector<int> father_database;
+    vector<vector<int>> marker_ID;
+
+    // Marker decoder
+    float marker_angle, edge_last, edge_now, dist_center;
+    int code[50];
+    pos_with_ID Pos_ID;
+    pos_with_ID match_dictionary(int *code, Mat1i& state);
+    bool find_father;
 };
 
 #endif

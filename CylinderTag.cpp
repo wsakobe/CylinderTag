@@ -16,30 +16,28 @@ CylinderTag::CylinderTag(const Mat1i& set_state)
 
 void CylinderTag::load_from_file(const string path)
 {
-	// 打开文件
-	// ifstream input_file(path);
-	// if (!input_file.is_open())
-	// {
-	// 	throw __FUNCTION__ + string(", ") + "could not open the file\n";
-	// }
-	// // 读 marker
-	// int hexM, hexN, triM, triN;
-	// input_file >> hexM >> hexN;
-	// triM = hexM + 1;
-	// triN = 2 * (hexN + 1);
-	// this->state = Mat1i(triM, triN);
-	// for (int& i : this->state)
-	// {
-	// 	input_file >> i;
-	// }
-	// try
-	// {
-	// 	check_dictionary(this->state);
-	// }
-	// catch (const string s)
-	// {
-	// 	throw s + __FUNCTION__ + string(", ") + "illegal marker info\n";
-	// }
+	ifstream input_file(path);
+	if (!input_file.is_open())
+	{
+		throw __FUNCTION__ + string(", ") + "could not open the file\n";
+	}
+	
+	int marker_num, marker_col, feature_size;
+	input_file >> marker_num >> marker_col >> feature_size;
+	
+	this->state = Mat1i(marker_num, marker_col);
+	for (int& i : this->state)
+	{
+		input_file >> i;
+	}
+	try
+	{
+		check_dictionary(this->state);
+	}
+	catch (const string s)
+	{
+		throw s + __FUNCTION__ + string(", ") + "illegal marker info\n";
+	}
 }
 
 void CylinderTag::load_from_set(const Mat1i& set_state)
@@ -59,11 +57,10 @@ void CylinderTag::check_dictionary(const Mat1i& input_state)
 {
 		for (int i : input_state)
 		{
-			if (!(i >= 0 && i <= 8))
+			if (!(i >= 0 && i <= 9))
 				throw __FUNCTION__ + string(", ") + "the number in state matrix must between 0 to 8\n";
 		}
-		// **检查唯一性
-
+		
 		return;
 }
 
@@ -101,12 +98,15 @@ void CylinderTag::detect(const Mat& img, vector<MarkerInfo>& cornerList, int ada
         line(imgMark, features[i].corners[6], features[i].corners[3], Scalar(255, 241, 67), 1);
         line(imgMark, features[i].corners[3], features[i].corners[0], Scalar(255, 241, 67), 1);
         circle(imgMark, features[i].feature_center, 2, Scalar(75, 92, 196));
+		putText(imgMark, to_string(i), features[i].corners[0], FONT_ITALIC, 1, Scalar(200, 200, 100), 1);
     }
     
 	imshow("Feature Organization", imgMark);
     waitKey(0);
 
     detector.featureExtraction(img, features, features);
+	detector.markerOrganization(features, markers);
+	detector.markerDecoder(markers, markers, this->state);
 }
 
 void CylinderTag::loadModel(const string& path, vector<ModelInfo> reconstruct_model){
