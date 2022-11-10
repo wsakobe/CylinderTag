@@ -419,8 +419,7 @@ void corner_detector::markerOrganization(vector<featureInfo> feature, vector<Mar
     for (int i = 0; i < cnt; i++){
         MarkerInfo mark;
         for (int j = 0; j < marker_ID[i].size(); j++){
-            for (int k = 0; k < 8; k++)
-                mark.cornerLists[j][k] = feature[marker_ID[i][j]].corners.at(k);
+            mark.cornerLists.push_back(feature[marker_ID[i][j]].corners);
             mark.feature_center.push_back(feature[marker_ID[i][j]].feature_center);
             mark.edge_length.push_back(distance_2points(feature[marker_ID[i][j]].corners[0], feature[marker_ID[i][j]].corners[1]));
             mark.feature_ID.push_back(feature[marker_ID[i][j]].ID);

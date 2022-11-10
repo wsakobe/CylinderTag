@@ -17,7 +17,7 @@ struct featureInfo{
 struct MarkerInfo{
     int markerID = -1;
     vector<int> featurePos, feature_ID;
-    vector<array<Point2f, 8>> cornerLists;
+    vector<vector<Point2f>> cornerLists;
     vector<Point2f> feature_center;
     vector<float> edge_length;
 };
