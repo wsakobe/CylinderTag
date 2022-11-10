@@ -53,7 +53,7 @@ public:
 
     void featureExtraction(const Mat& img, vector<featureInfo> feature_src, vector<featureInfo> feature_dst);
 
-    void markerOrganization(vector<featureInfo> feature, vector<MarkerInfo> markers);
+    void markerOrganization(vector<featureInfo> feature, vector<MarkerInfo>& markers);
 
     void markerDecoder(vector<MarkerInfo> markers_src, vector<MarkerInfo> markers_dst, Mat1i& state);
 
@@ -122,9 +122,10 @@ private:
 
     // Marker decoder
     float marker_angle, edge_last, edge_now, dist_center;
-    int code[50];
+    int code[50], pos_now, max_coverage, second_coverage, coverage_now, direc;
+    Point max_coverage_pos;
     pos_with_ID Pos_ID;
-    pos_with_ID match_dictionary(int *code, Mat1i& state);
+    pos_with_ID match_dictionary(int *code, Mat1i& state, int length);
     bool find_father;
 };
 
