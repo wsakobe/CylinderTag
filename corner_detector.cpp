@@ -158,12 +158,12 @@ void corner_detector::edgeExtraction(const Mat& img, vector<vector<Point>>& quad
             if (Gpow.at<float>(quadArea[i][j].y, quadArea[i][j].x) > Gmax) Gmax = Gpow.at<float>(quadArea[i][j].y, quadArea[i][j].x);
         }
         for (int j = 0; j < quadArea[i].size(); j++){
-            if (Gpow.at<float>(quadArea[i][j].y, quadArea[i][j].x) > (Gmax + Gmin) / 2){
+            if (Gpow.at<float>(quadArea[i][j].y, quadArea[i][j].x) > (Gmax + Gmin) / 2 - 0.05){
                 edge_angle.push_back(Gangle.at<float>(quadArea[i][j].y, quadArea[i][j].x));
                 edge_point.push_back(quadArea[i][j]);
             }
         }
-        measure = kmeans(edge_angle, 4, kmeans_label, TermCriteria(TermCriteria::EPS, 10, 0.5), 5, KMEANS_RANDOM_CENTERS);
+        measure = kmeans(edge_angle, 4, kmeans_label, TermCriteria(TermCriteria::EPS, 10, 0.5), 10, KMEANS_RANDOM_CENTERS);
         for (int j = 0; j < edge_angle.size(); j++){
             edge_angle_cluster[kmeans_label[j]].push_back(edge_angle[j]);
             edge_point_cluster[kmeans_label[j]].push_back(edge_point[j]);
@@ -318,7 +318,7 @@ void corner_detector::featureRecovery(vector<vector<Point2f>>& corners_refined, 
                 }
 
                 if ((tag1 && tag2) && (dist1_long > dist1_short || dist2_long > dist2_short)
-                    && (feature_half_length - (dist1_long + dist2_long) / 2 < 1.5 * (dist1_short + dist2_short))
+                    && (feature_half_length - (dist1_long + dist2_long) / 2 < 2 * (dist1_short + dist2_short))
                     && (abs(dist1_short - dist2_short) < min(dist1_short, dist2_short) * 0.2)
                     && (dist1_long + dist2_long > 2 * (dist1_short + dist2_short)))
                 {
@@ -375,11 +375,10 @@ void corner_detector::featureExtraction(const Mat& img, vector<featureInfo> feat
 
         cross_ratio_1 = (length_1[0] + length_1[1]) * (length_1[2] + length_1[1]) / ((length_1[1] * length_1[3]));
         cross_ratio_2 = (length_2[0] + length_2[1]) * (length_2[2] + length_2[1]) / ((length_2[1] * length_2[3]));
-        cout << "No." << i << " CR: " << cross_ratio_1 << " " << cross_ratio_2 << endl;
     }
 }
 
-void corner_detector::markerOrganization(vector<featureInfo> feature, vector<MarkerInfo> markers){
+void corner_detector::markerOrganization(vector<featureInfo> feature, vector<MarkerInfo>& markers){
     for (int i = 0; i < feature.size(); i++){
         father[i] = i;
     }
@@ -388,7 +387,6 @@ void corner_detector::markerOrganization(vector<featureInfo> feature, vector<Mar
             vector_center = feature[i].feature_center - feature[j].feature_center;
             vector_longedge = feature[i].corners[0] - feature[i].corners[5];
             center_angle = (vector_center.x * vector_longedge.x + vector_center.y * vector_longedge.y) / sqrt((vector_center.x * vector_center.x + vector_center.y * vector_center.y) * (vector_longedge.x * vector_longedge.x + vector_longedge.y * vector_longedge.y));
-            cout << i << " " << j << " " << center_angle << endl;
             if ((abs(feature[i].feature_angle - feature[j].feature_angle) < threshold_angle) && (abs(area(feature[i]) - area(feature[j])) < area_ratio * min(area(feature[i]), area(feature[j]))) && (distance_2points(feature[i].feature_center, feature[j].feature_center) < area(feature[i]) + area(feature[j])) && (abs(center_angle) < threshold_vertical)){
                 father[j] = union_find(i);
             }
@@ -439,21 +437,27 @@ bool cmp_y(Point2f& a, Point2f& b){
 void corner_detector::markerDecoder(vector<MarkerInfo> markers_src, vector<MarkerInfo> markers_dst, Mat1i& state){
     for (int i = 0; i < markers_src.size(); i++){
         marker_angle = atan2(markers_src[i].feature_center[0].y - markers_src[i].feature_center[1].y, markers_src[i].feature_center[0].x - markers_src[i].feature_center[1].x) * 180 / CV_PI;
-        if (abs(marker_angle) > 45 || abs(marker_angle) < 135){
+        
+        if (abs(marker_angle) > 45 && abs(marker_angle) < 135){
             sort(markers_src[i].feature_center.begin(), markers_src[i].feature_center.end(), cmp_x);
         }
         else{
             sort(markers_src[i].feature_center.begin(), markers_src[i].feature_center.end(), cmp_y);
         }
-        code[0] = markers_src[i].feature_ID[0];
+
+        memset(code, -1, sizeof(code));
+        pos_now = 0;
+        code[pos_now] = markers_src[i].feature_ID[0];
+
         for (int j = 1; j < markers_src[i].feature_center.size(); j++){
             float dist = distance_2points(markers_src[i].feature_center[j], markers_src[i].feature_center[j - 1]);
             float gap_dist = dist - (markers_src[i].edge_length[j] + markers_src[i].edge_length[j - 1]) / 2;
             int gap = round((gap_dist - (markers_src[i].edge_length[j] + markers_src[i].edge_length[j - 1]) / 4) / (3 * (markers_src[i].edge_length[j] + markers_src[i].edge_length[j - 1]) / 4));
-            code[gap + 1] = markers_src[i].feature_ID[j];
+            pos_now += gap + 1; 
+            code[pos_now] = markers_src[i].feature_ID[j];
         }
-        
-        Pos_ID = match_dictionary(code, state);
+
+        Pos_ID = match_dictionary(code, state, pos_now);
     }
 }
 
@@ -474,7 +478,54 @@ float corner_detector::area(featureInfo feature){
     return abs(feature_area);
 }
 
-pos_with_ID corner_detector::match_dictionary(int *code, Mat1i& state){
+pos_with_ID corner_detector::match_dictionary(int *code, Mat1i& state, int length){
     pos_with_ID POS_ID;
+    max_coverage = -1;
+    second_coverage = -1;
+    coverage_now = -1;
+    for (int i = 0; i < state.rows; i++){
+        for (int j = 0; j < state.cols; j++){
+            coverage_now = 0;
+            for (int k = 0; k < length; k++){
+                if (state.at<int>(i, (j + k) % state.cols) == code[k]){
+                    coverage_now++;
+                }
+            }
+            if (coverage_now > max_coverage){
+                max_coverage = coverage_now;
+                max_coverage_pos = Point(i, j);
+                direc = 1;
+            }
+            else if (coverage_now > second_coverage){
+                second_coverage = coverage_now;
+            }
+        }
+    }
+    for (int i = 0; i < state.rows; i++){
+        for (int j = 0; j < state.cols; j++){
+            coverage_now = 0;
+            for (int k = 0; k < length; k++){
+                if (state.at<int>(i, (j - k + state.cols) % state.cols) == code[k]){
+                    coverage_now++;
+                }
+            }
+            if (coverage_now > max_coverage){
+                max_coverage = coverage_now;
+                max_coverage_pos = Point(i, j);
+                direc = -1;
+            }
+            else if (coverage_now > second_coverage){
+                second_coverage = coverage_now;
+            }
+        }
+    }
+    if (max_coverage > 0.8 * length && max_coverage > second_coverage){
+        POS_ID.ID = max_coverage_pos.x;
+        for (int i = 0; i < length; i++){
+            if (code[i] != -1){
+                POS_ID.pos.push_back(max_coverage_pos.y + direc * i);
+            }
+        }            
+    }
     return POS_ID;
 }
