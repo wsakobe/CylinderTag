@@ -75,6 +75,8 @@ void CylinderTag::detect(const Mat& img, vector<MarkerInfo>& cornerList, int ada
 
     Mat img_binary(img_resize.rows, img_resize.cols, CV_8UC1);
     detector.adaptiveThreshold(img_resize, img_binary, adaptiveThresh);
+	// imshow("1", img_binary);
+	// waitKey(0);
     detector.connectedComponentLabeling(img_binary, quadAreas_labeled);
     detector.edgeExtraction(img_resize, quadAreas_labeled, corners);
 

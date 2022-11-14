@@ -109,6 +109,8 @@ private:
     float distance_2points(Point2f point1, Point2f point2);
     float cross_ratio_1, cross_ratio_2, length_1[4], length_2[4];
     bool label_area, label_instruct;
+    float ID_cr_correspond[9] = {1.45, 1.54, 1.63, 1.72, 1.8, 1.72, 1.63, 1.54, 1.45};
+    int instruct[9] = {0, 0, 0, 0, 0, 1, 1, 1, 1};
 
     // Marker organization
     int union_find(int input);
