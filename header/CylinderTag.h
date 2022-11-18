@@ -37,6 +37,7 @@ private:
     vector<vector<Point2f>> corners_refined;
     vector<featureInfo> features;
     vector<MarkerInfo> markers;
+    vector<double> meanG;
     
     Mat1i state;
 

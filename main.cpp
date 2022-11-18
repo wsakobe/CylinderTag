@@ -13,7 +13,17 @@ void read_from_video(const string& path);
 void read_online();
 
 int main(int argc, char** argv){
-	read_from_image(".\\Data\\10.bmp");
+	int a = 100;
+	clock_t start, finish;  
+    double duration;   
+	while (a--){
+		start = clock();
+		read_from_image(".\\Data\\3.bmp");
+		finish = clock();   
+    	duration = (double)(finish - start) / CLOCKS_PER_SEC; /*CLOCKS_PER_SEC，它用来表示一秒钟会有多少个时钟计时单元*/ 
+		//cout << duration * 1000 << endl;
+	}
+		
 	//read_from_video(".\\Data\\result4.avi");
 		
 	system("pause");

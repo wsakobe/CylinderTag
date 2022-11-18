@@ -12,6 +12,7 @@ struct featureInfo{
     int ID = -1;
     Point2f feature_center;
     float feature_angle;
+    bool firstDarker;
 };
 
 struct MarkerInfo{
@@ -39,7 +40,7 @@ public:
     
     void connectedComponentLabeling(const Mat& src, vector<vector<Point>>& quadArea, int method = 0);
     
-    void edgeExtraction(const Mat& img, vector<vector<Point>>& quadArea, vector<vector<Point2f>>& corners_init, int KMeansIter = 5);
+    void edgeExtraction(const Mat& img, vector<vector<Point>>& quadArea, vector<vector<Point2f>>& corners_init, vector<double>& meanG, int KMeansIter = 5);
     
     bool quadJudgment(vector<corners_pre>& corners, int areaPixelNumber);
 
@@ -47,9 +48,9 @@ public:
 
     bool parallelogramJudgment(vector<Point2f> corners);
 
-    void featureRecovery(vector<vector<Point2f>>& corners_refined, vector<featureInfo>& features);
+    void featureRecovery(vector<vector<Point2f>>& corners_refined, vector<featureInfo>& features, vector<double>& meanG);
     
-    featureInfo featureOrganization(vector<Point2f> quad1, vector<Point2f> quad2, Point2f quad1_center, Point2f quad2_center, float feature_angle);
+    featureInfo featureOrganization(vector<Point2f> quad1, vector<Point2f> quad2, Point2f quad1_center, Point2f quad2_center, float feature_angle, bool darker);
 
     void featureExtraction(const Mat& img, vector<featureInfo> feature_src, vector<featureInfo> feature_dst);
 
@@ -99,7 +100,7 @@ private:
     vector<array<float, 4>> corner_dist;
     vector<float> corner_angles_1, corner_angles_2;
     float feature_angle, feature_half_length, threshold_angle = 5, dist1_short, dist1_long, dist2_short, dist2_long;
-    bool isVisited[1000], tag1, tag2;
+    bool isVisited[1000], tag1, tag2, tag_darker;
 
     // Feature organization
     featureInfo Fea;
@@ -107,7 +108,7 @@ private:
 
     // Feature extraction
     float distance_2points(Point2f point1, Point2f point2);
-    float cross_ratio_1, cross_ratio_2, length_1[4], length_2[4];
+    float cross_ratio_1, cross_ratio_2, cross_ratio, length_1[4], length_2[4];
     bool label_area, label_instruct;
     float ID_cr_correspond[9] = {1.45, 1.54, 1.63, 1.72, 1.8, 1.72, 1.63, 1.54, 1.45};
     int instruct[9] = {0, 0, 0, 0, 0, 1, 1, 1, 1};

@@ -76,25 +76,28 @@ void corner_detector::connectedComponentLabeling(const Mat& src, vector<vector<P
         }
     }
 
-    //去除过小区域，初始化颜色表
-    vector<cv::Vec3b> colors(nccomp_area);
-    colors[0] = cv::Vec3b(0,0,0); // background pixels remain black.
-    for(int i = 1; i < nccomp_area; i++ ) {
-        colors[i] = cv::Vec3b(rand()%256, rand()%256, rand()%256);
-        //去除面积小于30的连通域
-        if (stats.at<int>(i, cv::CC_STAT_AREA) < 30 || stats.at<int>(i, cv::CC_STAT_AREA) > round(0.002 * src.cols * src.rows))
-                colors[i] = cv::Vec3b(0,0,0); // small regions are painted with black too.
-    }
-    //按照label值，对不同的连通域进行着色
-    Mat img_color = cv::Mat::zeros(src.size(), CV_8UC3);
-    for( int y = 0; y < img_color.rows; y++ )
-        for( int x = 0; x < img_color.cols; x++ )
-        {
-                int label = img_labeled.at<int>(y, x);
-                img_color.at<cv::Vec3b>(y, x) = colors[label];
-        }
-    cv::imshow("CCL", img_color);
-    cv::waitKey(0);
+    // //去除过小区域，初始化颜色表
+    // vector<cv::Vec3b> colors(nccomp_area);
+    // colors[0] = cv::Vec3b(0,0,0); // background pixels remain black.
+    // for(int i = 1; i < nccomp_area; i++ ) {
+    //     colors[i] = cv::Vec3b(rand()%256, rand()%256, rand()%256);
+    //     //去除面积小于30的连通域
+    //     if (stats.at<int>(i, cv::CC_STAT_AREA) < 30 || stats.at<int>(i, cv::CC_STAT_AREA) > round(0.002 * src.cols * src.rows))
+    //             colors[i] = cv::Vec3b(0,0,0); // small regions are painted with black too.
+    // }
+    // //按照label值，对不同的连通域进行着色
+    // Mat img_color = cv::Mat::zeros(src.size(), CV_32FC3);
+    // cvtColor(src, img_color, COLOR_GRAY2RGB);
+    // for( int y = 0; y < img_color.rows; y++ )
+    //     for( int x = 0; x < img_color.cols; x++ )
+    //     {
+    //             int label = img_labeled.at<int>(y, x);
+    //             //img_color.at<cv::Vec3b>(y, x) = colors[label];
+    //             if (label != 0)
+    //                 circle(img_color, Point(x, y), 1, Scalar(colors[label]));
+    //     }
+    // cv::imshow("CCL", img_color);
+    // cv::waitKey(0);
 }
 
 bool cmp_dis(const corners_pre& a, corners_pre& b){
@@ -105,26 +108,25 @@ bool cmp_ang(const corners_pre& a, corners_pre& b){
     return a.angle_to_centroid < b.angle_to_centroid;
 }
 
-void corner_detector::edgeExtraction(const Mat& img, vector<vector<Point>>& quadArea, vector<vector<Point2f>>& corners_init, int KMeansIter){
+void corner_detector::edgeExtraction(const Mat& img, vector<vector<Point>>& quadArea, vector<vector<Point2f>>& corners_init, vector<double>& meanG, int KMeansIter){
     // Display
     Mat imgMark(img.rows, img.cols, CV_32FC3);
     cvtColor(img, imgMark, COLOR_GRAY2RGB);
 
     Mat Gx, Gy;
 
+    clock_t start,finish;  
+    double duration; 
+    
     Sobel(img, Gx, -1, 1, 0, 3);
     Sobel(img, Gy, -1, 0, 1, 3);
+    
+    start = clock();
 
-    Mat Gangle(Gx.rows, Gx.cols, CV_32FC1);
-    Mat Gpow(Gy.rows, Gy.cols, CV_32FC1);
+    Mat Gangle, Gpow;
 
-    for (int i = 0; i < Gx.rows; i++)
-        for (int j = 0; j < Gx.cols; j++){
-            Gangle.at<float>(i, j) = atan2(Gy.at<float>(i, j), Gx.at<float>(i, j)) * 180 / CV_PI;
-            Gpow.at<float>(i, j) = sqrt(Gy.at<float>(i, j) * Gy.at<float>(i, j) + Gx.at<float>(i, j) * Gx.at<float>(i, j));    
-        }
-    imshow("GP", Gpow);
-    waitKey(0);
+    magnitude(Gx, Gy, Gpow);
+    phase(Gx, Gy, Gangle, true);
 
     for (int i = 0; i < quadArea.size(); i++){
         flag_line_number = false;
@@ -154,28 +156,33 @@ void corner_detector::edgeExtraction(const Mat& img, vector<vector<Point>>& quad
         for (int j = 0; j < 4; j++){
             edge_angle_cluster[j].clear();
         }
-        Gmax = -1, Gmin = 1;
-        cout << endl;
+        Gmax = -1;
         for (int j = 0; j < quadArea[i].size(); j++){
-            cout << Gpow.at<float>(quadArea[i][j].y, quadArea[i][j].x) << endl;
-            if (Gpow.at<float>(quadArea[i][j].y, quadArea[i][j].x) < Gmin) Gmin = Gpow.at<float>(quadArea[i][j].y, quadArea[i][j].x);
             if (Gpow.at<float>(quadArea[i][j].y, quadArea[i][j].x) > Gmax) Gmax = Gpow.at<float>(quadArea[i][j].y, quadArea[i][j].x);
         }
+        double mean_G = 0.0;
+        int num = 0;
         for (int j = 0; j < quadArea[i].size(); j++){
-            if (Gpow.at<float>(quadArea[i][j].y, quadArea[i][j].x) > (Gmax + Gmin) / 2){
+            if (Gpow.at<float>(quadArea[i][j].y, quadArea[i][j].x) > Gmax / 3){
+                mean_G += Gpow.at<float>(quadArea[i][j].y, quadArea[i][j].x);
+                num++;
                 edge_angle.push_back(Gangle.at<float>(quadArea[i][j].y, quadArea[i][j].x));
                 edge_point.push_back(quadArea[i][j]);
             }
         }
-        if (edge_angle.size() < 10) continue;
-        measure = kmeans(edge_angle, 4, kmeans_label, TermCriteria(TermCriteria::EPS, 10, 0.5), 5, KMEANS_RANDOM_CENTERS);
+        mean_G /= num;
+        //for (int j = 0; j < edge_point.size(); j++)
+        //   circle(imgMark, edge_point[j], 1, Scalar(rand()%256, rand()%256, rand()%256));
+        putText(imgMark, to_string(i), edge_point[0], FONT_ITALIC, 0.5, Scalar(120, 120, 120));
+
+        measure = kmeans(edge_angle, 4, kmeans_label, TermCriteria( TermCriteria::EPS+TermCriteria::COUNT, 50, 1.0), KMeansIter, KMEANS_RANDOM_CENTERS);
         for (int j = 0; j < edge_angle.size(); j++){
             edge_angle_cluster[kmeans_label[j]].push_back(edge_angle[j]);
             edge_point_cluster[kmeans_label[j]].push_back(edge_point[j]);
         }
         for (int j = 0; j < 4; j++){
             // No enough points to fit a line
-            if (edge_angle_cluster[j].size() < 3){ 
+            if (edge_angle_cluster[j].size() < 2){ 
                 flag_line_number = true;
                 break;
             }
@@ -219,14 +226,16 @@ void corner_detector::edgeExtraction(const Mat& img, vector<vector<Point>>& quad
             corners_pass.push_back(corners_p[j].intersect);
         }
         corners_init.push_back(corners_pass);
+        meanG.push_back(mean_G);
 
-        for (int j = 0; j < quadArea[i].size(); j++){
-            circle(imgMark, quadArea[i][j], 1, Scalar(0, 250, 0), -1);
-        }
+        // for (int j = 0; j < quadArea[i].size(); j++){
+        //     circle(imgMark, quadArea[i][j], 1, Scalar(0, 250, 0), -1);
+        // }
         for (int j = 0; j < corners_p.size(); j++){
             circle(imgMark, corners_p[j].intersect, 3, Scalar(120, 150, 0), -1);
         }
     }    
+      
     imshow("corners initial", imgMark);
     waitKey(0);
 }
@@ -271,7 +280,7 @@ bool corner_detector::parallelogramJudgment(vector<Point2f> corners){
     return false;
 }
 
-void corner_detector::featureRecovery(vector<vector<Point2f>>& corners_refined, vector<featureInfo>& features){
+void corner_detector::featureRecovery(vector<vector<Point2f>>& corners_refined, vector<featureInfo>& features, vector<double>& meanG){
     memset(isVisited, false, sizeof(isVisited));
     
     corner_dist.resize(corners_refined.size());
@@ -329,7 +338,8 @@ void corner_detector::featureRecovery(vector<vector<Point2f>>& corners_refined, 
                 {
                     isVisited[i] = true;
                     isVisited[j] = true;
-                    features.push_back(featureOrganization(corners_refined[i], corners_refined[j], corner_centers[i], corner_centers[j], feature_angle));
+                    tag_darker = meanG[i] > meanG[j] ? true : false;
+                    features.push_back(featureOrganization(corners_refined[i], corners_refined[j], corner_centers[i], corner_centers[j], feature_angle, tag_darker));
                     j = corners_refined.size();
                 }
             }
@@ -337,7 +347,7 @@ void corner_detector::featureRecovery(vector<vector<Point2f>>& corners_refined, 
     }
 }
 
-featureInfo corner_detector::featureOrganization(vector<Point2f> quad1, vector<Point2f> quad2, Point2f quad1_center, Point2f quad2_center, float feature_angle){
+featureInfo corner_detector::featureOrganization(vector<Point2f> quad1, vector<Point2f> quad2, Point2f quad1_center, Point2f quad2_center, float feature_angle, bool darker){
     float angle_max = 0, angle_min = 360;
     int pos_quad1 = -1, pos_quad2 = -1;
     Fea.corners.clear();
@@ -364,6 +374,7 @@ featureInfo corner_detector::featureOrganization(vector<Point2f> quad1, vector<P
         Fea.corners.push_back(quad2[(i + pos_quad2) % 4]);
     }
     Fea.feature_center = Point2f((Fea.corners[0].x + Fea.corners[1].x + Fea.corners[4].x + Fea.corners[5].x) / 4, (Fea.corners[0].y + Fea.corners[1].y + Fea.corners[4].y + Fea.corners[5].y) / 4);
+    Fea.firstDarker = darker ? true : false;
     return Fea;
 }
 
@@ -380,6 +391,7 @@ void corner_detector::featureExtraction(const Mat& img, vector<featureInfo> feat
 
         cross_ratio_1 = (length_1[0] + length_1[1]) * (length_1[2] + length_1[1]) / ((length_1[1] * length_1[3]));
         cross_ratio_2 = (length_2[0] + length_2[1]) * (length_2[2] + length_2[1]) / ((length_2[1] * length_2[3]));
+        cross_ratio = (cross_ratio_1 + cross_ratio_2) / 2;
     }
 }
 
