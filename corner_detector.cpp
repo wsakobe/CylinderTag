@@ -254,11 +254,114 @@ bool corner_detector::quadJudgment(vector<corners_pre>& corners, int areaPixelNu
 }
 
 void corner_detector::edgeSubPix(const Mat& src, vector<vector<Point2f>>& corners_init, vector<vector<Point2f>>& corners_refined, int subPixWindow){
-    corners_refined = corners_init;
+    // Display
+    Mat imgMark(src.rows, src.cols, CV_32FC3);
+    cvtColor(src, imgMark, COLOR_GRAY2RGB);
+
     for (int i = 0; i < corners_init.size(); i++){
         for (int j = 0; j < corners_init[i].size(); j++){
-            corners_refined[i][j] *= 2; 
+            corners_init[i][j] *= 2; 
         }
+    }
+    Mat A(2, 2, CV_32FC1);
+    Mat B(2, 1, CV_32FC1);
+    Mat sol(2, 1, CV_32FC1);
+    float x_min, x_max, y_min, y_max;
+    
+    for (int i = 0; i < corners_init.size(); i++){
+        x_min = src.cols;
+        x_max = 0;
+        y_min = src.rows;
+        y_max = 0;
+        contours.clear();
+        inliner_points.clear();
+
+        for (int j = 0; j < 4; j++){
+            Point2f corner_start = corners_init[i][j] * 0.9 + corners_init[i][(j + 1) % 4] * 0.1;
+            Point2f corner_end = corners_init[i][j] * 0.1 + corners_init[i][(j + 1) % 4] * 0.9;
+            
+            circle(imgMark, corner_start, 3, Scalar(0, 150, 0));
+            circle(imgMark, corner_end, 3, Scalar(0, 150, 0));
+
+            float k_line = (corners_init[i][j].y - corners_init[i][(j + 1) % 4].y) / (corners_init[i][j].x - corners_init[i][(j + 1) % 4].x);
+            if (abs(k_line) > 20) k_line = 20; // avoid vertical lines
+
+            float b_line = corners_init[i][j].y - k_line * corners_init[i][j].x;
+            Point2f normal_line = Point2f(k_line, -1);
+            float b_line_upon = b_line - subPixWindow * norm(normal_line);
+            float b_line_down = b_line + subPixWindow * norm(normal_line);
+
+            Point2f normal_orthline = Point2f(1/k_line, 1);
+            float b_orthline_upon = -corner_start.y - normal_orthline.x * corner_start.x;
+            float b_orthline_down = -corner_end.y - normal_orthline.x * corner_end.x;
+
+            // AX = B
+            A.at<float>(0, 0) = normal_line.x;
+            A.at<float>(0, 1) = normal_line.y;
+            A.at<float>(1, 0) = normal_orthline.x;
+            A.at<float>(1, 1) = normal_orthline.y;
+
+            //Left-up intersection
+            B.at<float>(0, 0) = -b_line_upon;
+            B.at<float>(1, 0) = -b_orthline_upon;
+            if (determinant(A) != 0){
+                solve(A, B, sol);
+                contours.push_back(Point2f(sol.at<float>(0, 0), sol.at<float>(1, 0)));
+                if (sol.at<float>(0, 0) > x_max) x_max = sol.at<float>(0, 0);
+                if (sol.at<float>(1, 0) > y_max) y_max = sol.at<float>(1, 0);
+                if (sol.at<float>(0, 0) < x_min) x_min = sol.at<float>(0, 0);
+                if (sol.at<float>(1, 0) < y_min) y_min = sol.at<float>(1, 0);
+            }
+
+            //Left-down intersection
+            B.at<float>(0, 0) = -b_line_down;
+            B.at<float>(1, 0) = -b_orthline_upon;
+            if (determinant(A) != 0){
+                solve(A, B, sol);
+                contours.push_back(Point2f(sol.at<float>(0, 0), sol.at<float>(1, 0)));
+                if (sol.at<float>(0, 0) > x_max) x_max = sol.at<float>(0, 0);
+                if (sol.at<float>(1, 0) > y_max) y_max = sol.at<float>(1, 0);
+                if (sol.at<float>(0, 0) < x_min) x_min = sol.at<float>(0, 0);
+                if (sol.at<float>(1, 0) < y_min) y_min = sol.at<float>(1, 0);
+            }
+
+            //Right-down intersection
+            B.at<float>(0, 0) = -b_line_down;
+            B.at<float>(1, 0) = -b_orthline_down;
+            if (determinant(A) != 0){
+                solve(A, B, sol);
+                contours.push_back(Point2f(sol.at<float>(0, 0), sol.at<float>(1, 0)));
+                if (sol.at<float>(0, 0) > x_max) x_max = sol.at<float>(0, 0);
+                if (sol.at<float>(1, 0) > y_max) y_max = sol.at<float>(1, 0);
+                if (sol.at<float>(0, 0) < x_min) x_min = sol.at<float>(0, 0);
+                if (sol.at<float>(1, 0) < y_min) y_min = sol.at<float>(1, 0);
+            }
+
+            //Right-up intersection
+            B.at<float>(0, 0) = -b_line_upon;
+            B.at<float>(1, 0) = -b_orthline_down;
+            if (determinant(A) != 0){
+                solve(A, B, sol);
+                contours.push_back(Point2f(sol.at<float>(0, 0), sol.at<float>(1, 0)));
+                if (sol.at<float>(0, 0) > x_max) x_max = sol.at<float>(0, 0);
+                if (sol.at<float>(1, 0) > y_max) y_max = sol.at<float>(1, 0);
+                if (sol.at<float>(0, 0) < x_min) x_min = sol.at<float>(0, 0);
+                if (sol.at<float>(1, 0) < y_min) y_min = sol.at<float>(1, 0);
+            }
+
+            for (int iter_x = round(x_min); iter_x < round(x_max); iter_x++)
+                for (int iter_y = round(y_min); iter_y < round(y_max); iter_y++){
+                    if (pointPolygonTest(contours, Point(iter_x, iter_y), false) > 0){
+                        inliner_points.push_back(Point(iter_x, iter_y));
+                    }
+                }
+            for (int k = 0; k < inliner_points.size(); k++){
+                circle(imgMark, inliner_points[k], 1, Scalar(150, 0, 0));
+            }
+            
+            imshow("edge subpixel", imgMark);
+            waitKey(0);
+        }        
     }
 }
 
