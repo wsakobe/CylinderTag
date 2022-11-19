@@ -106,6 +106,7 @@ void CylinderTag::detect(const Mat& img, vector<MarkerInfo>& cornerList, int ada
 	}
 	
     detector.featureRecovery(corners, features, meanG);
+	detector.featureExtraction(img, features, features);
 
 	start[5] = clock();
 	duration[4] = (double)(start[5] - start[4]) / CLOCKS_PER_SEC; 
@@ -120,14 +121,13 @@ void CylinderTag::detect(const Mat& img, vector<MarkerInfo>& cornerList, int ada
         line(imgMark, features[i].corners[6], features[i].corners[3], Scalar(255, 241, 67), 1);
         line(imgMark, features[i].corners[3], features[i].corners[0], Scalar(255, 241, 67), 1);
         circle(imgMark, features[i].feature_center, 2, Scalar(75, 92, 196));
-		putText(imgMark, to_string(i), features[i].corners[0], FONT_ITALIC, 1, Scalar(200, 200, 100), 1);
-		cout << features[i].firstDarker << endl;
+		putText(imgMark, to_string(features[i].cross_ratio), features[i].corners[0], FONT_ITALIC, 1, Scalar(200, 200, 100), 1);
+		cout << features[i].cross_ratio << endl;
     }
     
 	imshow("Feature Organization", imgMark);
     waitKey(0);
-
-    detector.featureExtraction(img, features, features);
+    
 	detector.markerOrganization(features, markers);
 	detector.markerDecoder(markers, markers, this->state);
 
