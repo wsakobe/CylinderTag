@@ -11,7 +11,7 @@ struct featureInfo{
     vector<Point2f> corners;
     int ID = -1;
     Point2f feature_center;
-    float feature_angle;
+    float feature_angle, cross_ratio;
     bool firstDarker;
 };
 
@@ -52,7 +52,7 @@ public:
     
     featureInfo featureOrganization(vector<Point2f> quad1, vector<Point2f> quad2, Point2f quad1_center, Point2f quad2_center, float feature_angle, bool darker);
 
-    void featureExtraction(const Mat& img, vector<featureInfo> feature_src, vector<featureInfo> feature_dst);
+    void featureExtraction(const Mat& img, vector<featureInfo>& feature_src, vector<featureInfo>& feature_dst);
 
     void markerOrganization(vector<featureInfo> feature, vector<MarkerInfo>& markers);
 
@@ -111,13 +111,13 @@ private:
     float cross_ratio_1, cross_ratio_2, cross_ratio, length_1[4], length_2[4];
     bool label_area, label_instruct;
     float ID_cr_correspond[9] = {1.45, 1.54, 1.63, 1.72, 1.8, 1.72, 1.63, 1.54, 1.45};
-    int instruct[9] = {0, 0, 0, 0, 0, 1, 1, 1, 1};
+    bool instruct[9] = {1, 1, 1, 1, 1, 0, 0, 0, 0}, tag_length;
 
     // Marker organization
     int union_find(int input);
     float area(featureInfo feature);
     int father[100];
-    float area_ratio = 0.1, threshold_vertical = 0.5, center_angle;
+    float area_ratio = 0.3, threshold_vertical = 0.5, center_angle;
     Point2f vector_center, vector_longedge;
     int pose[4] = {0, 1, 4, 5}, cnt;
     vector<int> father_database;
