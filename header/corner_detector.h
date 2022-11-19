@@ -88,7 +88,8 @@ private:
     vector<Point2f> corners_pass;
 
     // Edge refinement use
-
+    vector<Point2f> contours;
+    vector<Point> inliner_points;
 
     // Para Judgment use
     Point2f corner_center;
