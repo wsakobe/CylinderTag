@@ -3,15 +3,15 @@
         {
             "type": "cppbuild",
             "label": "Compile",
-            "command": "C:\\mingw64\\bin\\g++.exe",
+            "command": "D:\\mingw64\\bin\\g++.exe",
             "args": [
                 "-fdiagnostics-color=always",
+                "-std=c++17", 
                 "-g",
                 "${fileDirname}\\*.cpp",
                 "-o",
                 "${fileDirname}\\build\\${fileBasenameNoExtension}.exe",
                 "-fexec-charset=GBK",
-                "-std=c++17", 
                 // 扩展参数
                 // -I 头文件目录
                 // -L 库文件目录

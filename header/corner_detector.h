@@ -6,6 +6,7 @@
 
 using namespace std;
 using namespace cv;
+//using namespace ceres;
 
 struct featureInfo{
     vector<Point2f> corners;
@@ -36,6 +37,9 @@ struct pos_with_ID{
 
 class corner_detector{
 public:
+    corner_detector();
+    ~corner_detector();
+
     void adaptiveThreshold(const Mat& src, Mat& dst, int thresholdWindow = 5);
     
     void connectedComponentLabeling(const Mat& src, vector<vector<Point>>& quadArea, int method = 0);
@@ -45,6 +49,8 @@ public:
     bool quadJudgment(vector<corners_pre>& corners, int areaPixelNumber);
 
     void edgeSubPix(const Mat& src, vector<vector<Point2f>>& corners_init, vector<vector<Point2f>>& corners_refined, int subPixWindow);
+
+    //void buildProblem(Problem* problem, vector<Point> inlier_points, vector<float> inlier_pixels); 
 
     bool parallelogramJudgment(vector<Point2f> corners);
 
@@ -69,17 +75,30 @@ private:
     int nccomp_area = 0;
 
     // Edge extraction use
+    int x_min, x_max, y_min, y_max; // mask size
     long long sum_x, sum_y;
-    vector<float> edge_angle;
+    
+    vector<Point> edge_point; 
+    Point starter;
+    int x_bias[8] = {0, 1, 1, 1, 0, -1, -1, -1};
+    int y_bias[8] = {-1, -1, 0, 1, 1, 1, 0, -1};
+
+    vector<float> dist2center, dist2line;
+    float normal_line[2];
+    float d_line, dist_expand, threshold_line = 1.0, threshold_expand = 1;
+    Point2f area_center;
+    vector<int> span, span_temp;
+
+    vector<int> expand_line(vector<Point> edge_point, int init, int end);
+    bool find_edge_left, find_edge_right;
+    int left, right;
+    
     array<vector<float>, 4> edge_angle_cluster, line_func;
-    vector<Point> edge_point;
     array<vector<Point>, 4> edge_point_cluster;
-    vector<int> kmeans_label;
-    float Gmax = -1, Gmin = 1, edge_angle_all = 0;
-    double measure;
+
     vector<corners_pre> corners_p;    
     corners_pre c;
-    Point2f area_center;
+
     bool flag_line_number, flag_illegal_corner;
 
     // Quad judgment
@@ -88,9 +107,14 @@ private:
     vector<Point2f> corners_pass;
 
     // Edge refinement use
+    //Problem problem;
     vector<Point2f> contours;
-    vector<Point> inliner_points;
-
+    vector<Point> inlier_points;
+    vector<float> inlier_pixels;
+    float width, pixel_high_low[2], mean_pixel[2], dist;
+    double line_function[3]; 
+    int count[2], direction;
+    
     // Para Judgment use
     Point2f corner_center;
     float diff_percentage = 0.02, dist_to_center[4];
