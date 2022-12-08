@@ -662,6 +662,13 @@ void corner_detector::edgeSubPix(const Mat& src, vector<featureInfo>& features, 
     Mat B(2, 1, CV_32FC1);
     Mat sol(2, 1, CV_32FC1);
 
+    Solver::Options options;
+    options.linear_solver_type = DENSE_SCHUR;
+    options.gradient_tolerance = 1e-6;
+    options.function_tolerance = 1e-6;
+    options.parameter_tolerance = 1e-5;
+    Solver::Summary summary;
+
     for (int i = 0; i < features_refined.size(); i++) {
         x_min = src.cols;
         x_max = 0;
@@ -785,13 +792,6 @@ void corner_detector::edgeSubPix(const Mat& src, vector<featureInfo>& features, 
             line(imgMark, start_before_ceres, end_before_ceres, Scalar(120, 120, 0), 1);
             //cout << line_function[0] << " " << line_function[1] << " " << line_function[2] << endl;
             buildProblem(&problem, inlier_points, inlier_pixels);
-
-            Solver::Options options;
-            options.linear_solver_type = DENSE_SCHUR;
-            options.gradient_tolerance = 1e-6;
-            options.function_tolerance = 1e-6;
-            options.parameter_tolerance = 1e-5;
-            Solver::Summary summary;
 
             //Solve(options, &problem, &summary);
             Point2f start_after_ceres = Point2f(features_refined[i].corners[j].x, features_refined[i].corners[j].x * line_function[0] + line_function[1]);
@@ -921,13 +921,6 @@ void corner_detector::edgeSubPix(const Mat& src, vector<featureInfo>& features, 
             line(imgMark, start_before_ceres, end_before_ceres, Scalar(120, 120, 0), 1);
             //cout << line_function[0] << " " << line_function[1] << " " << line_function[2] << endl;
             buildProblem(&problem, inlier_points, inlier_pixels);
-
-            Solver::Options options;
-            options.linear_solver_type = DENSE_SCHUR;
-            options.gradient_tolerance = 1e-6;
-            options.function_tolerance = 1e-6;
-            options.parameter_tolerance = 1e-5;
-            Solver::Summary summary;
 
             //Solve(options, &problem, &summary);
             Point2f start_after_ceres = Point2f(features_refined[i].corners[j + 4].x, features_refined[i].corners[j + 4].x * line_function[0] + line_function[1]);
