@@ -7,6 +7,8 @@
 #include<algorithm>
 #include<iostream>
 #include<vector>
+#include<sstream>
+#include<iomanip>
 
 //OpenCV headers
 #include <opencv2/core.hpp>
@@ -18,9 +20,9 @@
 #include <opencv2/features2d.hpp>
 
 //Ceres headers
-// #include <Eigen/Dense>
-// #include "ceres/ceres.h"
-// #include "ceres/rotation.h"
-// #include "glog/logging.h"
+ #include <Eigen/Dense>
+ #include "ceres/ceres.h"
+ #include "ceres/rotation.h"
+ #include "glog/logging.h"
 
 #endif

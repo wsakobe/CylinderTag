@@ -40,6 +40,7 @@ private:
     vector<double> meanG;
     
     Mat1i state;
+    int featureSize;
 
 	void load_from_file(const string path); 
 	void load_from_set(const Mat1i& set_state);

@@ -13,7 +13,7 @@ void read_from_video(const string& path);
 void read_online();
 
 int main(int argc, char** argv){
-	//google::InitGoogleLogging(argv[0]);
+	google::InitGoogleLogging(argv[0]);
 	
 	// int a = 100;
 	// clock_t start, finish;  
@@ -39,7 +39,7 @@ void read_from_image(const string& path){
 	//marker.loadModel("CTag.model", marker_model);
 
 	cvtColor(frame, img_gray, COLOR_BGR2GRAY);
-	marker.detect(img_gray, marker_corners, 5, true, 3);
+	marker.detect(img_gray, marker_corners, 5, true, 5);
 	//marker.estimatePose(marker_corners, marker_model, rvec, tvec, true);
 	//marker.drawAxis(frame, rvec, tvec);
 }
@@ -53,9 +53,16 @@ void read_from_video(const string& path){
 
 	while (capture.read(frame))
 	{
+		for (int i = 0; i < 0; i++)
+			capture.read(frame);
+		
 		cvtColor(frame, img_gray, COLOR_BGR2GRAY);
-		marker.detect(img_gray, marker_corners, 5, true, 3);
+		marker.detect(img_gray, marker_corners, 5, true, 5);
 		//marker.estimatePose(marker_corners, marker_model, rvec, tvec, true);
 		//marker.drawAxis(frame, rvec, tvec);
 	}
+}
+
+void read_online() {
+
 }

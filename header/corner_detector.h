@@ -6,7 +6,7 @@
 
 using namespace std;
 using namespace cv;
-//using namespace ceres;
+using namespace ceres;
 
 struct featureInfo{
     vector<Point2f> corners;
@@ -48,30 +48,31 @@ public:
     
     bool quadJudgment(vector<corners_pre>& corners, int areaPixelNumber);
 
-    void edgeSubPix(const Mat& src, vector<vector<Point2f>>& corners_init, vector<vector<Point2f>>& corners_refined, int subPixWindow);
-
-    //void buildProblem(Problem* problem, vector<Point> inlier_points, vector<float> inlier_pixels); 
-
     bool parallelogramJudgment(vector<Point2f> corners);
 
     void featureRecovery(vector<vector<Point2f>>& corners_refined, vector<featureInfo>& features, vector<double>& meanG);
-    
+
+    void edgeSubPix(const Mat& src, vector<featureInfo>& features, vector<featureInfo>& features_refined, int subPixWindow);
+
+    void buildProblem(Problem* problem, vector<Point> inlier_points, vector<float> inlier_pixels);
+
     featureInfo featureOrganization(vector<Point2f> quad1, vector<Point2f> quad2, Point2f quad1_center, Point2f quad2_center, float feature_angle, bool darker);
 
     void featureExtraction(const Mat& img, vector<featureInfo>& feature_src, vector<featureInfo>& feature_dst);
 
     void markerOrganization(vector<featureInfo> feature, vector<MarkerInfo>& markers);
 
-    void markerDecoder(vector<MarkerInfo> markers_src, vector<MarkerInfo> markers_dst, Mat1i& state);
+    void markerDecoder(vector<MarkerInfo> markers_src, vector<MarkerInfo> markers_dst, Mat1i& state, int featureSize);
 
 private:
     // Adaptive threshold use
     Mat img_part, min_part, max_part;
-    int row_count = 0, col_count = 0, row_count_final = 1, col_count_final = 1;
+    int row_count, col_count, row_count_final, col_count_final;
     double maxVal, minVal;
 
     // CCL use
     Mat img_labeled, stats, centroids;
+    bool illegal[1000];
     int nccomp_area = 0;
 
     // Edge extraction use
@@ -84,10 +85,12 @@ private:
     int y_bias[8] = {-1, -1, 0, 1, 1, 1, 0, -1};
 
     vector<float> dist2center, dist2line;
+    int init, cnt_boundary;
     float normal_line[2];
-    float d_line, dist_expand, threshold_line = 1.0, threshold_expand = 1;
+    float d_line, dist_expand, threshold_line = 1.5, threshold_expand = 0.8, cost;
     Point2f area_center;
     vector<int> span, span_temp;
+    vector<int> b;
 
     vector<int> expand_line(vector<Point> edge_point, int init, int end);
     bool find_edge_left, find_edge_right;
@@ -107,7 +110,7 @@ private:
     vector<Point2f> corners_pass;
 
     // Edge refinement use
-    //Problem problem;
+    Problem problem;
     vector<Point2f> contours;
     vector<Point> inlier_points;
     vector<float> inlier_pixels;
@@ -142,7 +145,7 @@ private:
     int union_find(int input);
     float area(featureInfo feature);
     int father[100];
-    float area_ratio = 0.3, threshold_vertical = 0.5, center_angle;
+    float area_ratio = 0.5, threshold_vertical = 0.5, center_angle;
     Point2f vector_center, vector_longedge;
     int pose[4] = {0, 1, 4, 5}, cnt;
     vector<int> father_database;
