@@ -9,6 +9,7 @@
 #include<vector>
 #include<sstream>
 #include<iomanip>
+#include <fstream>
 
 //OpenCV headers
 #include <opencv2/core.hpp>
@@ -18,6 +19,7 @@
 #include <opencv2/gapi/core.hpp>
 #include <opencv2/core/utils/logger.hpp>
 #include <opencv2/features2d.hpp>
+#include <opencv2/calib3d.hpp>
 
 //Ceres headers
  #include <Eigen/Dense>

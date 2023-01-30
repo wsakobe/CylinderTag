@@ -366,3 +366,4 @@ FodyWeavers.xsd
 *.sln
 *.vcxproj
 *.filters
+/Recon

@@ -62,7 +62,7 @@ public:
 
     void markerOrganization(vector<featureInfo> feature, vector<MarkerInfo>& markers);
 
-    void markerDecoder(vector<MarkerInfo> markers_src, vector<MarkerInfo> markers_dst, Mat1i& state, int featureSize);
+    void markerDecoder(vector<MarkerInfo> markers_src, vector<MarkerInfo>& markers_dst, Mat1i& state, int featureSize);
 
 private:
     // Adaptive threshold use
@@ -72,7 +72,8 @@ private:
 
     // CCL use
     Mat img_labeled, stats, centroids;
-    bool illegal[1000];
+    //bool illegal[1000];
+    vector<bool> illegal;
     int nccomp_area = 0;
 
     // Edge extraction use
@@ -87,7 +88,7 @@ private:
     vector<float> dist2center, dist2line;
     int init, cnt_boundary;
     float normal_line[2];
-    float d_line, dist_expand, threshold_line = 1.5, threshold_expand = 0.8, cost;
+    float d_line, dist_expand, threshold_line = 2, threshold_expand = 1.0, cost;
     Point2f area_center;
     vector<int> span, span_temp;
     vector<int> b;
@@ -117,7 +118,7 @@ private:
     float width, pixel_high_low[2], mean_pixel[2], dist;
     double line_function[3]; 
     int count[2], direction;
-    
+
     // Para Judgment use
     Point2f corner_center;
     float diff_percentage = 0.02, dist_to_center[4];
@@ -156,7 +157,7 @@ private:
     int code[50], pos_now, max_coverage, second_coverage, coverage_now, direc;
     Point max_coverage_pos;
     pos_with_ID Pos_ID;
-    pos_with_ID match_dictionary(int *code, Mat1i& state, int length);
+    pos_with_ID match_dictionary(int *code, Mat1i& state, int length, int legal_bits);
     bool find_father;
 };
 
