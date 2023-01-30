@@ -56,19 +56,20 @@ void read_from_video(const string& path){
 	VideoCapture capture; 
 	frame = capture.open(path);	
 
-	CylinderTag marker("CTag_3f15c.marker");
-	marker.loadModel("CTag_3f15c.model", marker_model);
+	CylinderTag marker("CTag_3f12c.marker");
+	marker.loadModel("CTag_3f12c.model", marker_model);
+	marker.loadCamera("cameraParams.yml", camera);
 
 	int cnt = 0;
 	while (capture.read(frame))
 	{
-		for (int i = 0; i < 50; i++)
+		for (int i = 0; i < 0; i++)
 			capture.read(frame);
 		cout << cnt++ << endl;
 		cvtColor(frame, img_gray, COLOR_BGR2GRAY);
 		marker.detect(img_gray, markers, 5, true, 3);
-		//marker.estimatePose(marker_corners, marker_model, rvec, tvec, true);
-		//marker.drawAxis(frame, rvec, tvec);
+		marker.estimatePose(img_gray, markers, marker_model, camera, rvec, tvec, false);
+		marker.drawAxis(img_gray, markers, marker_model, rvec, tvec, camera, 5);
 	}
 }
 
