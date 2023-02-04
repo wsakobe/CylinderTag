@@ -10,9 +10,9 @@ using namespace ceres;
 
 struct featureInfo{
     vector<Point2f> corners;
-    int ID = -1;
+    int ID_left = -1, ID_right = -1;
     Point2f feature_center;
-    float feature_angle, cross_ratio;
+    float feature_angle, cross_ratio_left, cross_ratio_right;
     bool firstDarker;
 };
 
@@ -33,6 +33,7 @@ struct corners_pre{
 struct pos_with_ID{
     vector<int> pos;
     int ID = -1;
+    bool isGood = false;
 };
 
 class corner_detector{
@@ -46,9 +47,7 @@ public:
     
     void edgeExtraction(const Mat& img, vector<vector<Point>>& quadArea, vector<vector<Point2f>>& corners_init, vector<double>& meanG, int KMeansIter = 5);
     
-    bool quadJudgment(vector<corners_pre>& corners, int areaPixelNumber);
-
-    bool parallelogramJudgment(vector<Point2f> corners);
+    float quadJudgment(vector<corners_pre>& corners, int areaPixelNumber);
 
     void featureRecovery(vector<vector<Point2f>>& corners_refined, vector<featureInfo>& features, vector<double>& meanG);
 
@@ -79,16 +78,21 @@ private:
     // Edge extraction use
     int x_min, x_max, y_min, y_max; // mask size
     long long sum_x, sum_y;
+    vector<corners_pre> get_permutation(int step, int start, vector<corners_pre>& corners, int area);
+    bool vis[6];
+    int re[6];
+    vector<corners_pre> corners_per, corners_final;
+    float rac_now, rac_min;
     
     vector<Point> edge_point; 
     Point starter;
-    int x_bias[8] = {0, 1, 1, 1, 0, -1, -1, -1};
-    int y_bias[8] = {-1, -1, 0, 1, 1, 1, 0, -1};
+    int x_bias[24] = {0, 1, 1, 1, 0, -1, -1, -1, 0, 1, 2, 2, 2, 2, 2, 1, 0, -1, -2, -2, -2, -2, -2, -1};
+    int y_bias[24] = {-1, -1, 0, 1, 1, 1, 0, -1, -2, -2, -2, -1, 0, 1, 2, 2, 2, 2, 2, 1, 0, -1, -2, -2};
 
     vector<float> dist2center, dist2line;
     int init, cnt_boundary;
     float normal_line[2];
-    float d_line, dist_expand, threshold_line = 2, threshold_expand = 1.0, cost;
+    float d_line, dist_expand, threshold_line = 1.5, threshold_expand = 0.8, cost;
     Point2f area_center;
     vector<int> span, span_temp;
     vector<int> b;
@@ -107,11 +111,10 @@ private:
 
     // Quad judgment
     float quad_area, RAC;
-    float threshold_RAC = 0.5;
+    float threshold_RAC = 0.2;
     vector<Point2f> corners_pass;
 
     // Edge refinement use
-    Problem problem;
     vector<Point2f> contours;
     vector<Point> inlier_points;
     vector<float> inlier_pixels;
@@ -139,8 +142,8 @@ private:
     float distance_2points(Point2f point1, Point2f point2);
     float cross_ratio_1, cross_ratio_2, cross_ratio, length_1[4], length_2[4];
     bool label_area, label_instruct;
-    float ID_cr_correspond[9] = {1.45, 1.54, 1.63, 1.72, 1.8, 1.72, 1.63, 1.54, 1.45};
-    bool instruct[9] = {1, 1, 1, 1, 1, 0, 0, 0, 0}, tag_length;
+    float ID_cr_correspond[5] = {1.4620, 1.6099, 1.7155, 1.7789, 1.8};
+    bool tag_length;
 
     // Marker organization
     int union_find(int input);
