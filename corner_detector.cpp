@@ -205,7 +205,7 @@ vector<int> corner_detector::expand_line(vector<Point> edge_point, int init, int
     return span_temp;
 }
 
-void corner_detector::edgeExtraction(const Mat& img, vector<vector<Point>>& quadArea, vector<vector<Point2f>>& corners_init, vector<double>& meanG, int KMeansIter){
+void corner_detector::edgeExtraction(const Mat& img, vector<vector<Point>>& quadArea, vector<vector<Point2f>>& corners_init){
     // Display
     Mat imgMark(img.rows, img.cols, CV_32FC3);
     cvtColor(img, imgMark, COLOR_GRAY2RGB);
@@ -224,8 +224,6 @@ void corner_detector::edgeExtraction(const Mat& img, vector<vector<Point>>& quad
         for (int j = 0; j < 4; j++){
             edge_point_cluster[j].clear();
         }
-        //for (int j = 0; j < quadArea[i].size(); j++)
-        //    circle(imgMark, quadArea[i][j], 1, Scalar(0, 120, 100), -1);
 
         // Ray-casting Algorithm
         sort(quadArea[i].begin(), quadArea[i].end(), comp_x);
@@ -277,7 +275,7 @@ void corner_detector::edgeExtraction(const Mat& img, vector<vector<Point>>& quad
                     break;
                 }
             }  
-                
+
         //Find start point
         for (int j = 0; j < visited.cols; j++)
             for (int k = 0; k < visited.rows; k++){
@@ -289,23 +287,10 @@ void corner_detector::edgeExtraction(const Mat& img, vector<vector<Point>>& quad
                     break;
                 }
             }
-        bool isEnd = false;
-        while (!isEnd){
-            isEnd = true;
-            for (int j = 0; j < 24; j++){
-                if (starter.y + y_bias[j] >= 0 && starter.y + y_bias[j] < visited.rows && starter.x + x_bias[j] >= 0 && starter.x + x_bias[j] < visited.cols)
-                    if (visited.at<uchar>(starter.y + y_bias[j], starter.x + x_bias[j])){
-                        edge_point.push_back(Point(starter.x + x_bias[j] + x_min, starter.y + y_bias[j] + y_min));
-                        visited.at<uchar>(starter.y + y_bias[j], starter.x + x_bias[j]) = 0;
-                        starter = Point(starter.x + x_bias[j], starter.y + y_bias[j]);
-                        isEnd = false;
-                        break;
-                    }
-            }
-        }
-        for (int k = 0; k < edge_point.size(); k++) {
-            circle(imgMark, edge_point[k], 1, Scalar(255, 255, 255), -1);
-        }
+        
+        edge_number = sum(visited);
+        get_orientedEdgePoints(visited, starter, edge_number[0]);
+           
         //Extract the center of the boundaries
         sum_x = 0, sum_y = 0;
         for (int j = 0; j < edge_point.size(); j++){
@@ -429,7 +414,7 @@ void corner_detector::edgeExtraction(const Mat& img, vector<vector<Point>>& quad
         }
         for (int k = 0; k < edge_point_cluster[3].size(); k++){
             circle(imgMark, edge_point_cluster[3][k], 0.5, Scalar(0, 120, 100), -1);
-        } 
+        }
         
         if (flag_line_number) continue;
         for (int j = 0; j < 3; j++){
@@ -474,17 +459,29 @@ void corner_detector::edgeExtraction(const Mat& img, vector<vector<Point>>& quad
         }
         
         corners_init.push_back(corners_pass);
-        meanG.push_back(img.at<float>(area_center.y, area_center.x));
         ostringstream oss;
         oss << corners_init.size() - 1;
-        //putText(imgMark, oss.str(), corners_pass[0], FONT_ITALIC, 0.6, Scalar(20, 200, 255), 2);
+        putText(imgMark, oss.str(), corners_pass[0], FONT_ITALIC, 0.6, Scalar(20, 200, 255), 1);
         for (int j = 0; j < corners_pass.size(); j++){
             circle(imgMark, corners_pass[j], 2, Scalar(120, 150, 0), -1);
         }
         
     }     
-    imshow("corners initial", imgMark);
-    waitKey(1);
+    //imshow("corners initial", imgMark);
+    //waitKey(1);
+}
+
+void corner_detector::get_orientedEdgePoints(Mat& visited, Point starter, int count)
+{
+    for (int j = 0; j < 8; j++) {
+        if (starter.y + y_bias[j] >= 0 && starter.y + y_bias[j] < visited.rows && starter.x + x_bias[j] >= 0 && starter.x + x_bias[j] < visited.cols)
+            if (visited.at<uchar>(starter.y + y_bias[j], starter.x + x_bias[j])) {
+                edge_point.push_back(Point(starter.x + x_bias[j] + x_min, starter.y + y_bias[j] + y_min));
+                visited.at<uchar>(starter.y + y_bias[j], starter.x + x_bias[j]) = 0;
+                starter = Point(starter.x + x_bias[j], starter.y + y_bias[j]);
+                get_orientedEdgePoints(visited, starter, count - 1);
+            }
+    }
 }
 
 vector<corners_pre> corner_detector::get_permutation(int step, int start, vector<corners_pre>& corners, int area)
@@ -532,7 +529,7 @@ float corner_detector::quadJudgment(vector<corners_pre>& corners, int areaPixelN
     return RAC;    
 }
 
-void corner_detector::featureRecovery(vector<vector<Point2f>>& corners_refined, vector<featureInfo>& features, vector<double>& meanG){
+void corner_detector::featureRecovery(vector<vector<Point2f>>& corners_refined, vector<featureInfo>& features){
     memset(isVisited, false, sizeof(isVisited));
 
     corner_dist.resize(corners_refined.size());
@@ -561,37 +558,69 @@ void corner_detector::featureRecovery(vector<vector<Point2f>>& corners_refined, 
                 tag1 = false;
                 tag2 = false;
                 feature_angle = atan2(corner_centers[i].y - corner_centers[j].y, corner_centers[i].x - corner_centers[j].x) * 180 / CV_PI;
-                feature_half_length = sqrt((corner_centers[i].y - corner_centers[j].y) * (corner_centers[i].y - corner_centers[j].y) + (corner_centers[i].x - corner_centers[j].x) * (corner_centers[i].x - corner_centers[j].x));
-                if (abs(feature_angle - corner_angles_1[i]) < threshold_angle || abs(abs(feature_angle - corner_angles_1[i]) - 180) < threshold_angle){
+                
+                if (abs(feature_angle - corner_angles_1[i]) < threshold_angle || abs(abs(feature_angle - corner_angles_1[i]) - 180) < threshold_angle || abs(abs(feature_angle - corner_angles_1[i]) - 360) < threshold_angle){
                     tag1 = true;
                     dist1_long = (corner_dist[i][0] + corner_dist[i][2]) / 2;
-                    dist1_short = (corner_dist[i][1] + corner_dist[i][3]) / 2;
+                    dist1_short = min(corner_dist[i][1], corner_dist[i][3]);
+                    if (corner_dist[i][1] < corner_dist[i][3]) {
+                        edge_angle1 = atan2(corners_refined[i][0].y - corners_refined[i][3].y, corners_refined[i][0].x - corners_refined[i][3].x) * 180 / CV_PI;
+                        feature_point1 = (corners_refined[i][1] + corners_refined[i][2]) / 2;
+                    }                        
+                    else {
+                        edge_angle1 = atan2(corners_refined[i][1].y - corners_refined[i][2].y, corners_refined[i][1].x - corners_refined[i][2].x) * 180 / CV_PI;
+                        feature_point1 = (corners_refined[i][0] + corners_refined[i][3]) / 2;
+                    }                        
                 }
-                if (abs(feature_angle - corner_angles_2[i]) < threshold_angle || abs(abs(feature_angle - corner_angles_2[i]) - 180) < threshold_angle){
+                if (abs(feature_angle - corner_angles_2[i]) < threshold_angle || abs(abs(feature_angle - corner_angles_2[i]) - 180) < threshold_angle || abs(abs(feature_angle - corner_angles_2[i]) - 360) < threshold_angle){
                     tag1 = true;
-                    dist1_short = (corner_dist[i][0] + corner_dist[i][2]) / 2;
+                    dist1_short = min(corner_dist[i][0], corner_dist[i][2]);
                     dist1_long = (corner_dist[i][1] + corner_dist[i][3]) / 2;
+                    if (corner_dist[i][0] > corner_dist[i][2]) {
+                        edge_angle1 = atan2(corners_refined[i][0].y - corners_refined[i][1].y, corners_refined[i][0].x - corners_refined[i][1].x) * 180 / CV_PI;
+                        feature_point1 = (corners_refined[i][2] + corners_refined[i][3]) / 2;
+                    }                        
+                    else {
+                        edge_angle1 = atan2(corners_refined[i][2].y - corners_refined[i][3].y, corners_refined[i][2].x - corners_refined[i][3].x) * 180 / CV_PI;
+                        feature_point1 = (corners_refined[i][0] + corners_refined[i][1]) / 2;
+                    }                        
                 }
-                if (abs(feature_angle - corner_angles_1[j]) < threshold_angle || abs(abs(feature_angle - corner_angles_1[j]) - 180) < threshold_angle){
+                if (abs(feature_angle - corner_angles_1[j]) < threshold_angle || abs(abs(feature_angle - corner_angles_1[j]) - 180) < threshold_angle || abs(abs(feature_angle - corner_angles_1[j]) - 360) < threshold_angle){
                     tag2 = true;
                     dist2_long = (corner_dist[j][0] + corner_dist[j][2]) / 2;
-                    dist2_short = (corner_dist[j][1] + corner_dist[j][3]) / 2;
+                    dist2_short = min(corner_dist[j][1], corner_dist[j][3]);
+                    if (corner_dist[j][1] < corner_dist[j][3]) {
+                        edge_angle2 = atan2(corners_refined[j][0].y - corners_refined[j][3].y, corners_refined[j][0].x - corners_refined[j][3].x) * 180 / CV_PI;
+                        feature_point2 = (corners_refined[j][1] + corners_refined[j][2]) / 2;
+                    }                        
+                    else {
+                        edge_angle2 = atan2(corners_refined[j][1].y - corners_refined[j][2].y, corners_refined[j][1].x - corners_refined[j][2].x) * 180 / CV_PI;
+                        feature_point2 = (corners_refined[j][0] + corners_refined[j][3]) / 2;
+                    }                        
                 }
-                if (abs(feature_angle - corner_angles_2[j]) < threshold_angle || abs(abs(feature_angle - corner_angles_2[j]) - 180) < threshold_angle){
+                if (abs(feature_angle - corner_angles_2[j]) < threshold_angle || abs(abs(feature_angle - corner_angles_2[j]) - 180) < threshold_angle || abs(abs(feature_angle - corner_angles_2[j]) - 360) < threshold_angle){
                     tag2 = true;
-                    dist2_short = (corner_dist[j][0] + corner_dist[j][2]) / 2;
+                    dist2_short = min(corner_dist[j][0], corner_dist[j][2]);
                     dist2_long = (corner_dist[j][1] + corner_dist[j][3]) / 2;
+                    if (corner_dist[j][0] > corner_dist[j][2]) {
+                        edge_angle2 = atan2(corners_refined[j][0].y - corners_refined[j][1].y, corners_refined[j][0].x - corners_refined[j][1].x) * 180 / CV_PI;
+                        feature_point2 = (corners_refined[j][2] + corners_refined[j][3]) / 2;
+                    }                        
+                    else {
+                        edge_angle2 = atan2(corners_refined[j][2].y - corners_refined[j][3].y, corners_refined[j][2].x - corners_refined[j][3].x) * 180 / CV_PI;
+                        feature_point2 = (corners_refined[j][0] + corners_refined[j][1]) / 2;
+                    }                        
                 }
-
+                feature_length = distance_2points(feature_point1, feature_point2);
                 if ((tag1 && tag2) && (dist1_long > dist1_short || dist2_long > dist2_short)
-                    && (feature_half_length - (dist1_long + dist2_long) / 2 < 2 * (dist1_short + dist2_short))
-                    && (abs(dist1_short - dist2_short) < min(dist1_short, dist2_short) * 0.2)
-                    && (dist1_long + dist2_long > 2 * (dist1_short + dist2_short)))
+                    && (abs(edge_angle1 - edge_angle2) < threshold_angle * 8 || abs(abs(edge_angle1 - edge_angle2) - 180) < threshold_angle * 8 || abs(abs(edge_angle1 - edge_angle2) - 360) < threshold_angle * 8)
+                    && (abs(dist1_short - dist2_short) < min(dist1_short, dist2_short) * 0.25)
+                    && ((dist1_long + dist2_long) > 2 * (dist1_short + dist2_short))
+                    && (feature_length - dist1_long - dist2_long < max(dist1_long, dist2_long)))
                 {
                     isVisited[i] = true;
                     isVisited[j] = true;
-                    tag_darker = meanG[i] > meanG[j] ? true : false;
-                    features.push_back(featureOrganization(corners_refined[i], corners_refined[j], corner_centers[i], corner_centers[j], feature_angle, tag_darker));
+                    features.push_back(featureOrganization(corners_refined[i], corners_refined[j], corner_centers[i], corner_centers[j], feature_angle));
                     j = corners_refined.size();
                 }
             }
@@ -600,7 +629,7 @@ void corner_detector::featureRecovery(vector<vector<Point2f>>& corners_refined, 
 
 }
 
-featureInfo corner_detector::featureOrganization(vector<Point2f> quad1, vector<Point2f> quad2, Point2f quad1_center, Point2f quad2_center, float feature_angle, bool darker) {
+featureInfo corner_detector::featureOrganization(vector<Point2f> quad1, vector<Point2f> quad2, Point2f quad1_center, Point2f quad2_center, float feature_angle) {
     float angle_max = 0, angle_min = 360;
     int pos_quad1 = -1, pos_quad2 = -1;
     Fea.corners.clear();
@@ -627,7 +656,6 @@ featureInfo corner_detector::featureOrganization(vector<Point2f> quad1, vector<P
         Fea.corners.push_back(quad2[(i + pos_quad2) % 4]);
     }
     Fea.feature_center = Point2f((Fea.corners[0].x + Fea.corners[1].x + Fea.corners[4].x + Fea.corners[5].x) / 4, (Fea.corners[0].y + Fea.corners[1].y + Fea.corners[4].y + Fea.corners[5].y) / 4);
-    Fea.firstDarker = darker ? true : false;
     return Fea;
 }
 
@@ -694,123 +722,133 @@ void corner_detector::edgeSubPix(const Mat& src, vector<featureInfo>& features, 
             line_function[1] = (features_refined[i].corners[j].x - features_refined[i].corners[(j + 1) % 4].x) / sqrt((features_refined[i].corners[j].x - features_refined[i].corners[(j + 1) % 4].x) * (features_refined[i].corners[j].x - features_refined[i].corners[(j + 1) % 4].x) + (features_refined[i].corners[j].y - features_refined[i].corners[(j + 1) % 4].y) * (features_refined[i].corners[j].y - features_refined[i].corners[(j + 1) % 4].y));;
             line_function[2] = -line_function[0] * features_refined[i].corners[j].x - line_function[1] * features_refined[i].corners[j].y;
 
-            if (j != 10){
-                x_min = src.cols;
-                x_max = 0;
-                y_min = src.rows;
-                y_max = 0;
-                contours.clear();
-                inlier_pixels.clear();
-                inlier_points.clear();
+            x_min = src.cols;
+            x_max = 0;
+            y_min = src.rows;
+            y_max = 0;
+            contours.clear();
+            inlier_pixels.clear();
+            inlier_points.clear();
 
-                Point2f corner_start = features_refined[i].corners[j] * 0.9 + features_refined[i].corners[(j + 1) % 4] * 0.1;
-                Point2f corner_end = features_refined[i].corners[j] * 0.1 + features_refined[i].corners[(j + 1) % 4] * 0.9;
+            point_dist = distance_2points(features_refined[i].corners[j], features_refined[i].corners[(j + 1) % 4]);
+            ratio = point_dist < 10 ? 0.9 : max(0.6, 0.9 - point_dist / 80 * 0.3);
+            Point2f corner_start = features_refined[i].corners[j] * ratio + features_refined[i].corners[(j + 1) % 4] * (1 - ratio);
+            Point2f corner_end = features_refined[i].corners[j] * (1 - ratio) + features_refined[i].corners[(j + 1) % 4] * ratio;
+ 
+            float k_line = (features_refined[i].corners[j].y - features_refined[i].corners[(j + 1) % 4].y) / (features_refined[i].corners[j].x - features_refined[i].corners[(j + 1) % 4].x);
+            if (abs(k_line) > 100) k_line = 100; // avoid vertical lines
+            if (abs(k_line - 0) < 1e-4) k_line = 1e-2; // avoid horizon lines
 
-                float k_line = (features_refined[i].corners[j].y - features_refined[i].corners[(j + 1) % 4].y) / (features_refined[i].corners[j].x - features_refined[i].corners[(j + 1) % 4].x);
-                if (abs(k_line) > 20) k_line = 20; // avoid vertical lines
+            float b_line = features_refined[i].corners[j].y - k_line * features_refined[i].corners[j].x;
+            Point2f normal_line = Point2f(k_line, -1);
+            float b_line_upon = b_line - subPixWindow * norm(normal_line);
+            float b_line_down = b_line + subPixWindow * norm(normal_line);
 
-                float b_line = features_refined[i].corners[j].y - k_line * features_refined[i].corners[j].x;
-                Point2f normal_line = Point2f(k_line, -1);
-                float b_line_upon = b_line - subPixWindow * norm(normal_line);
-                float b_line_down = b_line + subPixWindow * norm(normal_line);
+            Point2f normal_orthline = Point2f(1 / k_line, 1);
+            float b_orthline_upon = -corner_start.y - normal_orthline.x * corner_start.x;
+            float b_orthline_down = -corner_end.y - normal_orthline.x * corner_end.x;
 
-                Point2f normal_orthline = Point2f(1 / k_line, 1);
-                float b_orthline_upon = -corner_start.y - normal_orthline.x * corner_start.x;
-                float b_orthline_down = -corner_end.y - normal_orthline.x * corner_end.x;
+            //AX = B
+            A.at<float>(0, 0) = normal_line.x;
+            A.at<float>(0, 1) = normal_line.y;
+            A.at<float>(1, 0) = normal_orthline.x;
+            A.at<float>(1, 1) = normal_orthline.y;
 
-                //AX = B
-                A.at<float>(0, 0) = normal_line.x;
-                A.at<float>(0, 1) = normal_line.y;
-                A.at<float>(1, 0) = normal_orthline.x;
-                A.at<float>(1, 1) = normal_orthline.y;
+            //Left-up intersection
+            B.at<float>(0, 0) = -b_line_upon;
+            B.at<float>(1, 0) = -b_orthline_upon;
+            if (determinant(A) != 0) {
+                solve(A, B, sol);
+                contours.push_back(Point2f(sol.at<float>(0, 0), sol.at<float>(1, 0)));
+                if (sol.at<float>(0, 0) > x_max) x_max = sol.at<float>(0, 0);
+                if (sol.at<float>(1, 0) > y_max) y_max = sol.at<float>(1, 0);
+                if (sol.at<float>(0, 0) < x_min) x_min = sol.at<float>(0, 0);
+                if (sol.at<float>(1, 0) < y_min) y_min = sol.at<float>(1, 0);
+            }
 
-                //Left-up intersection
-                B.at<float>(0, 0) = -b_line_upon;
-                B.at<float>(1, 0) = -b_orthline_upon;
-                if (determinant(A) != 0) {
-                    solve(A, B, sol);
-                    contours.push_back(Point2f(sol.at<float>(0, 0), sol.at<float>(1, 0)));
-                    if (sol.at<float>(0, 0) > x_max) x_max = sol.at<float>(0, 0);
-                    if (sol.at<float>(1, 0) > y_max) y_max = sol.at<float>(1, 0);
-                    if (sol.at<float>(0, 0) < x_min) x_min = sol.at<float>(0, 0);
-                    if (sol.at<float>(1, 0) < y_min) y_min = sol.at<float>(1, 0);
-                }
+            //Left-down intersection
+            B.at<float>(0, 0) = -b_line_down;
+            B.at<float>(1, 0) = -b_orthline_upon;
+            if (determinant(A) != 0) {
+                solve(A, B, sol);
+                contours.push_back(Point2f(sol.at<float>(0, 0), sol.at<float>(1, 0)));
+                if (sol.at<float>(0, 0) > x_max) x_max = sol.at<float>(0, 0);
+                if (sol.at<float>(1, 0) > y_max) y_max = sol.at<float>(1, 0);
+                if (sol.at<float>(0, 0) < x_min) x_min = sol.at<float>(0, 0);
+                if (sol.at<float>(1, 0) < y_min) y_min = sol.at<float>(1, 0);
+            }
 
-                //Left-down intersection
-                B.at<float>(0, 0) = -b_line_down;
-                B.at<float>(1, 0) = -b_orthline_upon;
-                if (determinant(A) != 0) {
-                    solve(A, B, sol);
-                    contours.push_back(Point2f(sol.at<float>(0, 0), sol.at<float>(1, 0)));
-                    if (sol.at<float>(0, 0) > x_max) x_max = sol.at<float>(0, 0);
-                    if (sol.at<float>(1, 0) > y_max) y_max = sol.at<float>(1, 0);
-                    if (sol.at<float>(0, 0) < x_min) x_min = sol.at<float>(0, 0);
-                    if (sol.at<float>(1, 0) < y_min) y_min = sol.at<float>(1, 0);
-                }
+            //Right-down intersection
+            B.at<float>(0, 0) = -b_line_down;
+            B.at<float>(1, 0) = -b_orthline_down;
+            if (determinant(A) != 0) {
+                solve(A, B, sol);
+                contours.push_back(Point2f(sol.at<float>(0, 0), sol.at<float>(1, 0)));
+                if (sol.at<float>(0, 0) > x_max) x_max = sol.at<float>(0, 0);
+                if (sol.at<float>(1, 0) > y_max) y_max = sol.at<float>(1, 0);
+                if (sol.at<float>(0, 0) < x_min) x_min = sol.at<float>(0, 0);
+                if (sol.at<float>(1, 0) < y_min) y_min = sol.at<float>(1, 0);
+            }
 
-                //Right-down intersection
-                B.at<float>(0, 0) = -b_line_down;
-                B.at<float>(1, 0) = -b_orthline_down;
-                if (determinant(A) != 0) {
-                    solve(A, B, sol);
-                    contours.push_back(Point2f(sol.at<float>(0, 0), sol.at<float>(1, 0)));
-                    if (sol.at<float>(0, 0) > x_max) x_max = sol.at<float>(0, 0);
-                    if (sol.at<float>(1, 0) > y_max) y_max = sol.at<float>(1, 0);
-                    if (sol.at<float>(0, 0) < x_min) x_min = sol.at<float>(0, 0);
-                    if (sol.at<float>(1, 0) < y_min) y_min = sol.at<float>(1, 0);
-                }
+            //Right-up intersection
+            B.at<float>(0, 0) = -b_line_upon;
+            B.at<float>(1, 0) = -b_orthline_down;
+            if (determinant(A) != 0) {
+                solve(A, B, sol);
+                contours.push_back(Point2f(sol.at<float>(0, 0), sol.at<float>(1, 0)));
+                if (sol.at<float>(0, 0) > x_max) x_max = sol.at<float>(0, 0);
+                if (sol.at<float>(1, 0) > y_max) y_max = sol.at<float>(1, 0);
+                if (sol.at<float>(0, 0) < x_min) x_min = sol.at<float>(0, 0);
+                if (sol.at<float>(1, 0) < y_min) y_min = sol.at<float>(1, 0);
+            }
 
-                //Right-up intersection
-                B.at<float>(0, 0) = -b_line_upon;
-                B.at<float>(1, 0) = -b_orthline_down;
-                if (determinant(A) != 0) {
-                    solve(A, B, sol);
-                    contours.push_back(Point2f(sol.at<float>(0, 0), sol.at<float>(1, 0)));
-                    if (sol.at<float>(0, 0) > x_max) x_max = sol.at<float>(0, 0);
-                    if (sol.at<float>(1, 0) > y_max) y_max = sol.at<float>(1, 0);
-                    if (sol.at<float>(0, 0) < x_min) x_min = sol.at<float>(0, 0);
-                    if (sol.at<float>(1, 0) < y_min) y_min = sol.at<float>(1, 0);
-                }
+            //Direction judgment
+            count[0] = 0;
+            count[1] = 0;
+            mean_pixel[0] = 0;
+            mean_pixel[1] = 0;
 
-                //Direction judgment
-                count[0] = 0;
-                count[1] = 0;
-                mean_pixel[0] = 0;
-                mean_pixel[1] = 0;
-
-                for (int iter_x = max(0, (int)x_min); iter_x < round(x_max); iter_x++)
-                    for (int iter_y = max(0, (int)y_min); iter_y < round(y_max); iter_y++) {
-                        if (pointPolygonTest(contours, Point(iter_x, iter_y), false) > 0) {
-                            inlier_points.push_back(Point(iter_x, iter_y));
-                            inlier_pixels.push_back(src.at<float>(iter_y, iter_x));
-                            circle(imgMark, Point(iter_x, iter_y), 1, Scalar(0, 255, 0));
-                            dist = line_function[0] * iter_x + line_function[1] * iter_y + line_function[2];
-                            if (dist > subPixWindow * 0.5) {
-                                count[1]++;
-                                mean_pixel[1] += src.at<float>(iter_y, iter_x);
-                            }
-                            else if (dist < -subPixWindow * 0.5) {
-                                count[0]++;
-                                mean_pixel[0] += src.at<float>(iter_y, iter_x);
-                            }
+            for (int iter_x = max(0, (int)x_min); iter_x < round(x_max); iter_x++)
+                for (int iter_y = max(0, (int)y_min); iter_y < round(y_max); iter_y++) {
+                    if (pointPolygonTest(contours, Point(iter_x, iter_y), false) > 0) {
+                        inlier_points.push_back(Point(iter_x, iter_y));
+                        inlier_pixels.push_back(src.at<float>(iter_y, iter_x));
+                        circle(imgMark, Point(iter_x, iter_y), 1, Scalar(0, 255, 0));
+                        dist = line_function[0] * iter_x + line_function[1] * iter_y + line_function[2];
+                        if (dist > subPixWindow * 0.5) {
+                            count[1]++;
+                            mean_pixel[1] += src.at<float>(iter_y, iter_x);
+                        }
+                        else if (dist < -subPixWindow * 0.5) {
+                            count[0]++;
+                            mean_pixel[0] += src.at<float>(iter_y, iter_x);
                         }
                     }
+                }
 
-                if (mean_pixel[0] / count[0] > mean_pixel[1] / count[1]) {
-                    pixel_high_low[0] = mean_pixel[0] / count[0];
-                    pixel_high_low[1] = mean_pixel[1] / count[1];
-                    direction = -1;
-                }
-                else {
-                    pixel_high_low[1] = mean_pixel[0] / count[0];
-                    pixel_high_low[0] = mean_pixel[1] / count[1];
-                    direction = 1;
-                }
-                Problem problem;
-                buildProblem(&problem, inlier_points, inlier_pixels);
-                Solve(options, &problem, &summary);
+            if (mean_pixel[0] / count[0] > mean_pixel[1] / count[1]) {
+                pixel_high_low[0] = mean_pixel[0] / count[0];
+                pixel_high_low[1] = mean_pixel[1] / count[1];
+                direction = -1;
             }
-            
+            else {
+                pixel_high_low[1] = mean_pixel[0] / count[0];
+                pixel_high_low[0] = mean_pixel[1] / count[1];
+                direction = 1;
+            }
+            Point2f start_before_ceres = Point2f(features_refined[i].corners[j].x, (-features_refined[i].corners[j].x * line_function[0] - line_function[2]) / line_function[1]);
+            Point2f end_before_ceres = Point2f(features_refined[i].corners[(j + 1) % 4].x, (-features_refined[i].corners[(j + 1) % 4].x * line_function[0] - line_function[2]) / line_function[1]);
+            line(imgMark, start_before_ceres, end_before_ceres, Scalar(120, 120, 0), 1);
+
+            Problem problem;
+            buildProblem(&problem, inlier_points, inlier_pixels);
+            Solve(options, &problem, &summary);
+            //cout << summary.FullReport() << endl;
+            Point2f start_after_ceres = Point2f(features_refined[i].corners[j].x, (-features_refined[i].corners[j].x * line_function[0] - line_function[2]) / line_function[1]);
+            Point2f end_after_ceres = Point2f(features_refined[i].corners[(j + 1) % 4].x, (-features_refined[i].corners[(j + 1) % 4].x * line_function[0] - line_function[2]) / line_function[1]);
+            line(imgMark, start_after_ceres, end_after_ceres, Scalar(0, 255, 0), 1);
+            //imshow("edge subpixel", imgMark);
+            //waitKey(0);
             line_func[j].clear();
             line_func[j].push_back(line_function[0]);
             line_func[j].push_back(line_function[1]);
@@ -837,129 +875,141 @@ void corner_detector::edgeSubPix(const Mat& src, vector<featureInfo>& features, 
             line_function[1] = (features_refined[i].corners[j + 4].x - features_refined[i].corners[(j + 1) % 4 + 4].x) / sqrt((features_refined[i].corners[j + 4].x - features_refined[i].corners[(j + 1) % 4 + 4].x) * (features_refined[i].corners[j + 4].x - features_refined[i].corners[(j + 1) % 4 + 4].x) + (features_refined[i].corners[j + 4].y - features_refined[i].corners[(j + 1) % 4 + 4].y) * (features_refined[i].corners[j + 4].y - features_refined[i].corners[(j + 1) % 4 + 4].y));;
             line_function[2] = -line_function[0] * features_refined[i].corners[j + 4].x - line_function[1] * features_refined[i].corners[j + 4].y;
 
-            if (j != 10) {
-                x_min = src.cols;
-                x_max = 0;
-                y_min = src.rows;
-                y_max = 0;
-                contours.clear();
-                inlier_pixels.clear();
-                inlier_points.clear();
+            x_min = src.cols;
+            x_max = 0;
+            y_min = src.rows;
+            y_max = 0;
+            contours.clear();
+            inlier_pixels.clear();
+            inlier_points.clear();
 
-                Point2f corner_start = features_refined[i].corners[j + 4] * 0.9 + features_refined[i].corners[(j + 1) % 4 + 4] * 0.1;
-                Point2f corner_end = features_refined[i].corners[j + 4] * 0.1 + features_refined[i].corners[(j + 1) % 4 + 4] * 0.9;
+            point_dist = distance_2points(features_refined[i].corners[j + 4], features_refined[i].corners[(j + 1) % 4 + 4]);
+            ratio = point_dist < 10 ? 0.9 : max(0.6, 0.9 - point_dist / 80 * 0.3);
+            Point2f corner_start = features_refined[i].corners[j + 4] * ratio + features_refined[i].corners[(j + 1) % 4 + 4] * (1 - ratio);
+            Point2f corner_end = features_refined[i].corners[j + 4] * (1 - ratio) + features_refined[i].corners[(j + 1) % 4 + 4] * ratio;
 
-                float k_line = (features_refined[i].corners[j + 4].y - features_refined[i].corners[(j + 1) % 4 + 4].y) / (features_refined[i].corners[j + 4].x - features_refined[i].corners[(j + 1) % 4 + 4].x);
-                if (abs(k_line) > 20) k_line = 20; // avoid vertical lines
+            float k_line = (features_refined[i].corners[j + 4].y - features_refined[i].corners[(j + 1) % 4 + 4].y) / (features_refined[i].corners[j + 4].x - features_refined[i].corners[(j + 1) % 4 + 4].x);
+            if (abs(k_line) > 100) k_line = 100; // avoid vertical lines
+            if (abs(k_line - 0) < 1e-4) k_line = 1e-2; // avoid horizon lines
 
-                float b_line = features_refined[i].corners[j + 4].y - k_line * features_refined[i].corners[j + 4].x;
-                Point2f normal_line = Point2f(k_line, -1);
-                float b_line_upon = b_line - subPixWindow * norm(normal_line);
-                float b_line_down = b_line + subPixWindow * norm(normal_line);
+            float b_line = features_refined[i].corners[j + 4].y - k_line * features_refined[i].corners[j + 4].x;
+            Point2f normal_line = Point2f(k_line, -1);
+            float b_line_upon = b_line - subPixWindow * norm(normal_line);
+            float b_line_down = b_line + subPixWindow * norm(normal_line);
 
-                Point2f normal_orthline = Point2f(1 / k_line, 1);
-                float b_orthline_upon = -corner_start.y - normal_orthline.x * corner_start.x;
-                float b_orthline_down = -corner_end.y - normal_orthline.x * corner_end.x;
+            Point2f normal_orthline = Point2f(1 / k_line, 1);
+            float b_orthline_upon = -corner_start.y - normal_orthline.x * corner_start.x;
+            float b_orthline_down = -corner_end.y - normal_orthline.x * corner_end.x;
 
-                // AX = B
-                A.at<float>(0, 0) = normal_line.x;
-                A.at<float>(0, 1) = normal_line.y;
-                A.at<float>(1, 0) = normal_orthline.x;
-                A.at<float>(1, 1) = normal_orthline.y;
+            // AX = B
+            A.at<float>(0, 0) = normal_line.x;
+            A.at<float>(0, 1) = normal_line.y;
+            A.at<float>(1, 0) = normal_orthline.x;
+            A.at<float>(1, 1) = normal_orthline.y;
 
-                //Left-up intersection
-                B.at<float>(0, 0) = -b_line_upon;
-                B.at<float>(1, 0) = -b_orthline_upon;
-                if (determinant(A) != 0) {
-                    solve(A, B, sol);
-                    contours.push_back(Point2f(sol.at<float>(0, 0), sol.at<float>(1, 0)));
-                    if (sol.at<float>(0, 0) > x_max) x_max = sol.at<float>(0, 0);
-                    if (sol.at<float>(1, 0) > y_max) y_max = sol.at<float>(1, 0);
-                    if (sol.at<float>(0, 0) < x_min) x_min = sol.at<float>(0, 0);
-                    if (sol.at<float>(1, 0) < y_min) y_min = sol.at<float>(1, 0);
-                }
+            //Left-up intersection
+            B.at<float>(0, 0) = -b_line_upon;
+            B.at<float>(1, 0) = -b_orthline_upon;
+            if (determinant(A) != 0) {
+                solve(A, B, sol);
+                contours.push_back(Point2f(sol.at<float>(0, 0), sol.at<float>(1, 0)));
+                if (sol.at<float>(0, 0) > x_max) x_max = sol.at<float>(0, 0);
+                if (sol.at<float>(1, 0) > y_max) y_max = sol.at<float>(1, 0);
+                if (sol.at<float>(0, 0) < x_min) x_min = sol.at<float>(0, 0);
+                if (sol.at<float>(1, 0) < y_min) y_min = sol.at<float>(1, 0);
+            }
 
-                //Left-down intersection
-                B.at<float>(0, 0) = -b_line_down;
-                B.at<float>(1, 0) = -b_orthline_upon;
-                if (determinant(A) != 0) {
-                    solve(A, B, sol);
-                    contours.push_back(Point2f(sol.at<float>(0, 0), sol.at<float>(1, 0)));
-                    if (sol.at<float>(0, 0) > x_max) x_max = sol.at<float>(0, 0);
-                    if (sol.at<float>(1, 0) > y_max) y_max = sol.at<float>(1, 0);
-                    if (sol.at<float>(0, 0) < x_min) x_min = sol.at<float>(0, 0);
-                    if (sol.at<float>(1, 0) < y_min) y_min = sol.at<float>(1, 0);
-                }
+            //Left-down intersection
+            B.at<float>(0, 0) = -b_line_down;
+            B.at<float>(1, 0) = -b_orthline_upon;
+            if (determinant(A) != 0) {
+                solve(A, B, sol);
+                contours.push_back(Point2f(sol.at<float>(0, 0), sol.at<float>(1, 0)));
+                if (sol.at<float>(0, 0) > x_max) x_max = sol.at<float>(0, 0);
+                if (sol.at<float>(1, 0) > y_max) y_max = sol.at<float>(1, 0);
+                if (sol.at<float>(0, 0) < x_min) x_min = sol.at<float>(0, 0);
+                if (sol.at<float>(1, 0) < y_min) y_min = sol.at<float>(1, 0);
+            }
 
-                //Right-down intersection
-                B.at<float>(0, 0) = -b_line_down;
-                B.at<float>(1, 0) = -b_orthline_down;
-                if (determinant(A) != 0) {
-                    solve(A, B, sol);
-                    contours.push_back(Point2f(sol.at<float>(0, 0), sol.at<float>(1, 0)));
-                    if (sol.at<float>(0, 0) > x_max) x_max = sol.at<float>(0, 0);
-                    if (sol.at<float>(1, 0) > y_max) y_max = sol.at<float>(1, 0);
-                    if (sol.at<float>(0, 0) < x_min) x_min = sol.at<float>(0, 0);
-                    if (sol.at<float>(1, 0) < y_min) y_min = sol.at<float>(1, 0);
-                }
+            //Right-down intersection
+            B.at<float>(0, 0) = -b_line_down;
+            B.at<float>(1, 0) = -b_orthline_down;
+            if (determinant(A) != 0) {
+                solve(A, B, sol);
+                contours.push_back(Point2f(sol.at<float>(0, 0), sol.at<float>(1, 0)));
+                if (sol.at<float>(0, 0) > x_max) x_max = sol.at<float>(0, 0);
+                if (sol.at<float>(1, 0) > y_max) y_max = sol.at<float>(1, 0);
+                if (sol.at<float>(0, 0) < x_min) x_min = sol.at<float>(0, 0);
+                if (sol.at<float>(1, 0) < y_min) y_min = sol.at<float>(1, 0);
+            }
 
-                //Right-up intersection
-                B.at<float>(0, 0) = -b_line_upon;
-                B.at<float>(1, 0) = -b_orthline_down;
-                if (determinant(A) != 0) {
-                    solve(A, B, sol);
-                    contours.push_back(Point2f(sol.at<float>(0, 0), sol.at<float>(1, 0)));
-                    if (sol.at<float>(0, 0) > x_max) x_max = sol.at<float>(0, 0);
-                    if (sol.at<float>(1, 0) > y_max) y_max = sol.at<float>(1, 0);
-                    if (sol.at<float>(0, 0) < x_min) x_min = sol.at<float>(0, 0);
-                    if (sol.at<float>(1, 0) < y_min) y_min = sol.at<float>(1, 0);
-                }
+            //Right-up intersection
+            B.at<float>(0, 0) = -b_line_upon;
+            B.at<float>(1, 0) = -b_orthline_down;
+            if (determinant(A) != 0) {
+                solve(A, B, sol);
+                contours.push_back(Point2f(sol.at<float>(0, 0), sol.at<float>(1, 0)));
+                if (sol.at<float>(0, 0) > x_max) x_max = sol.at<float>(0, 0);
+                if (sol.at<float>(1, 0) > y_max) y_max = sol.at<float>(1, 0);
+                if (sol.at<float>(0, 0) < x_min) x_min = sol.at<float>(0, 0);
+                if (sol.at<float>(1, 0) < y_min) y_min = sol.at<float>(1, 0);
+            }
 
-                //direction judgment
-                count[0] = 0;
-                count[1] = 0;
-                mean_pixel[0] = 0;
-                mean_pixel[1] = 0;
+            //direction judgment
+            count[0] = 0;
+            count[1] = 0;
+            mean_pixel[0] = 0;
+            mean_pixel[1] = 0;
 
-                for (int iter_x = max(0, (int)x_min); iter_x < round(x_max); iter_x++)
-                    for (int iter_y = max(0, (int)y_min); iter_y < round(y_max); iter_y++) {
-                        if (pointPolygonTest(contours, Point(iter_x, iter_y), false) > 0) {
-                            inlier_points.push_back(Point(iter_x, iter_y));
-                            inlier_pixels.push_back(src.at<float>(iter_y, iter_x));
-                            //circle(imgMark, Point(iter_x, iter_y), 1, Scalar(0, 255, 0));
-                            dist = line_function[0] * iter_x + line_function[1] * iter_y + line_function[2];
-                            if (dist > 0) {
-                                count[1]++;
-                                mean_pixel[1] += src.at<float>(iter_y, iter_x);
-                            }
-                            else {
-                                count[0]++;
-                                mean_pixel[0] += src.at<float>(iter_y, iter_x);
-                            }
+            for (int iter_x = max(0, (int)x_min); iter_x < round(x_max); iter_x++)
+                for (int iter_y = max(0, (int)y_min); iter_y < round(y_max); iter_y++) {
+                    if (pointPolygonTest(contours, Point(iter_x, iter_y), false) > 0) {
+                        inlier_points.push_back(Point(iter_x, iter_y));
+                        inlier_pixels.push_back(src.at<float>(iter_y, iter_x));
+                        circle(imgMark, Point(iter_x, iter_y), 1, Scalar(0, 255, 0));
+                        dist = line_function[0] * iter_x + line_function[1] * iter_y + line_function[2];
+                        if (dist > subPixWindow * 0.5) {
+                            count[1]++;
+                            mean_pixel[1] += src.at<float>(iter_y, iter_x);
+                        }
+                        else if (dist < -subPixWindow * 0.5) {
+                            count[0]++;
+                            mean_pixel[0] += src.at<float>(iter_y, iter_x);
                         }
                     }
+                }
 
-                if (mean_pixel[0] / count[0] > mean_pixel[1] / count[1]) {
-                    pixel_high_low[0] = mean_pixel[0] / count[0];
-                    pixel_high_low[1] = mean_pixel[1] / count[1];
-                    direction = -1;
-                }
-                else {
-                    pixel_high_low[1] = mean_pixel[0] / count[0];
-                    pixel_high_low[0] = mean_pixel[1] / count[1];
-                    direction = 1;
-                }
-                Problem problem;
-                buildProblem(&problem, inlier_points, inlier_pixels);
-                Solve(options, &problem, &summary);
+            if (mean_pixel[0] / count[0] > mean_pixel[1] / count[1]) {
+                pixel_high_low[0] = mean_pixel[0] / count[0];
+                pixel_high_low[1] = mean_pixel[1] / count[1];
+                direction = -1;
             }
+            else {
+                pixel_high_low[1] = mean_pixel[0] / count[0];
+                pixel_high_low[0] = mean_pixel[1] / count[1];
+                direction = 1;
+            }
+            Point2f start_before_ceres = Point2f(features_refined[i].corners[j + 4].x, (-features_refined[i].corners[j + 4].x * line_function[0] - line_function[2]) / line_function[1]);
+            Point2f end_before_ceres = Point2f(features_refined[i].corners[(j + 1) % 4 + 4].x, (-features_refined[i].corners[(j + 1) % 4 + 4].x * line_function[0] - line_function[2]) / line_function[1]);
+            line(imgMark, start_before_ceres, end_before_ceres, Scalar(120, 120, 0), 1);
+
+            Problem problem;
+            buildProblem(&problem, inlier_points, inlier_pixels);
+            Solve(options, &problem, &summary);
+            //cout << summary.FullReport() << endl;
+            
+            Point2f start_after_ceres = Point2f(features_refined[i].corners[j + 4].x, (-features_refined[i].corners[j + 4].x * line_function[0] - line_function[2]) / line_function[1]);
+            Point2f end_after_ceres = Point2f(features_refined[i].corners[(j + 1) % 4 + 4].x, (-features_refined[i].corners[(j + 1) % 4 + 4].x * line_function[0] - line_function[2]) / line_function[1]);
+            //line(imgMark, start_after_ceres, end_after_ceres, Scalar(0, 255, 0), 1);
+            //imshow("edge subpixel", imgMark);
+            //waitKey(0);
             
             line_func[j].clear();
             line_func[j].push_back(line_function[0]);
             line_func[j].push_back(line_function[1]);
             line_func[j].push_back(line_function[2]);
         }
-                
+            
         for (int j = 0; j < 4; j++) {
             A.at<float>(0, 0) = line_func[j][0];
             A.at<float>(0, 1) = line_func[j][1];
@@ -999,6 +1049,8 @@ void corner_detector::featureExtraction(const Mat& img, vector<featureInfo>& fea
         feature_dst[i].cross_ratio_left  = (length_1[0] + length_1[1]) * (length_1[2] + length_1[1]) / ((length_1[1] * length_1[3]));
         feature_dst[i].cross_ratio_right = (length_2[0] + length_2[1]) * (length_2[2] + length_2[1]) / ((length_2[1] * length_2[3]));
         
+        cout << length_1[0] << " " << length_1[1] << " " << length_1[2] << " " << length_1[3] << " " << feature_dst[i].cross_ratio_left << endl;
+        cout << length_2[0] << " " << length_2[1] << " " << length_2[2] << " " << length_2[3] << " " << feature_dst[i].cross_ratio_right << endl;
         Point3f line1, line2, line_cross1, line_cross2, middle_line, line_left, line_right;
         
         line1.x = feature_src[i].corners[5].y - feature_src[i].corners[4].y;
@@ -1087,10 +1139,10 @@ void corner_detector::featureExtraction(const Mat& img, vector<featureInfo>& fea
         if (dist2 * dist3 < dist1 * dist4) is_long_feature = true;
 
         double diff = 0.1;
-        for (int j = 0; j < 5; j++){
+        for (int j = 0; j < 4; j++){
             if (abs(feature_dst[i].cross_ratio_left - ID_cr_correspond[j]) < diff){
                 diff = abs(feature_dst[i].cross_ratio_left - ID_cr_correspond[j]);
-                feature_dst[i].ID_left = is_long_feature ? 8 - j : j;
+                feature_dst[i].ID_left = is_long_feature ? 7 - j : j;
             }
         }
 
@@ -1103,10 +1155,10 @@ void corner_detector::featureExtraction(const Mat& img, vector<featureInfo>& fea
         if (dist2 * dist3 < dist1 * dist4) is_long_feature = true;
 
         diff = 0.1;
-        for (int j = 0; j < 5; j++) {
+        for (int j = 0; j < 4; j++) {
             if (abs(feature_dst[i].cross_ratio_right - ID_cr_correspond[j]) < diff) {
                 diff = abs(feature_dst[i].cross_ratio_right - ID_cr_correspond[j]);
-                feature_dst[i].ID_right = is_long_feature ? 8 - j : j;
+                feature_dst[i].ID_right = is_long_feature ? 7 - j : j;
             }
         }
     }
@@ -1154,7 +1206,7 @@ void corner_detector::markerOrganization(vector<featureInfo> feature, vector<Mar
             mark.cornerLists.push_back(feature[marker_ID[i][j]].corners);
             mark.feature_center.push_back(feature[marker_ID[i][j]].feature_center);
             mark.edge_length.push_back(distance_2points(feature[marker_ID[i][j]].corners[0], feature[marker_ID[i][j]].corners[1]));
-            mark.feature_ID.push_back(feature[marker_ID[i][j]].ID_left);
+            mark.feature_ID.push_back(feature[marker_ID[i][j]].ID_left * 8 + feature[marker_ID[i][j]].ID_right);
         } 
         markers.push_back(mark);
     }
@@ -1216,7 +1268,7 @@ void corner_detector::markerDecoder(vector<MarkerInfo> markers_src, vector<Marke
         for (int j = 1; j < markers_src[i].feature_center.size(); j++){
             float dist = distance_2points(markers_src[i].feature_center[j], markers_src[i].feature_center[j - 1]);
             float gap_dist = dist - (markers_src[i].edge_length[j] + markers_src[i].edge_length[j - 1]) / 2;
-            int gap = round(gap_dist / (markers_src[i].edge_length[j] + markers_src[i].edge_length[j - 1]) / 2);
+            int gap = round(gap_dist / (markers_src[i].edge_length[j] + markers_src[i].edge_length[j - 1]) / 4);
             pos_now += gap + 1; 
             code[pos_now] = markers_src[i].feature_ID[j];
         }
@@ -1278,7 +1330,7 @@ pos_with_ID corner_detector::match_dictionary(int *code, Mat1i& state, int lengt
         for (int j = 0; j < state.cols; j++){
             coverage_now = 0;
             for (int k = 0; k <= length; k++){
-                if (state.at<int>(i, (j - k + state.cols) % state.cols) == code[k]){
+                if (state.at<int>(i, (j - k + state.cols) % state.cols) == ((7 - code[k] / 8) + (7 - code[k] % 8) * 8)){
                     coverage_now++;
                 }
             }

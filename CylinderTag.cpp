@@ -57,8 +57,8 @@ void CylinderTag::check_dictionary(const Mat1i& input_state)
 {
 		for (int i : input_state)
 		{
-			if (!(i >= 0 && i <= 9))
-				throw __FUNCTION__ + string(", ") + "the number in state matrix must between 0 to 8\n";
+			if (!(i > 0 && i <= 63))
+				throw __FUNCTION__ + string(", ") + "the number in state matrix must between 1 to 63\n";
 		}
 		
 		return;
@@ -76,7 +76,6 @@ void CylinderTag::detect(const Mat& img, vector<MarkerInfo>& markers_info, int a
     
 	//Refresh
 	quadAreas_labeled.clear();
-	meanG.clear();
 	corners.clear();
 	features.clear();
 	markers.clear();
@@ -100,7 +99,7 @@ void CylinderTag::detect(const Mat& img, vector<MarkerInfo>& markers_info, int a
 	start[3] = clock();
 	duration[2] = (double)(start[3] - start[2]) / CLOCKS_PER_SEC; 
 
-    detector.edgeExtraction(img_resize, quadAreas_labeled, corners, meanG);
+    detector.edgeExtraction(img_resize, quadAreas_labeled, corners);
 	if (corners.empty()) {
 		cout << "No corner detected!" << endl;
 		return;
@@ -109,7 +108,7 @@ void CylinderTag::detect(const Mat& img, vector<MarkerInfo>& markers_info, int a
 	start[4] = clock();
 	duration[3] = (double)(start[4] - start[3]) / CLOCKS_PER_SEC; 
 
-	detector.featureRecovery(corners, features, meanG);
+	detector.featureRecovery(corners, features);
 	if (features.empty()) {
 		cout << "No feature detected!" << endl;
 		return;
@@ -137,15 +136,14 @@ void CylinderTag::detect(const Mat& img, vector<MarkerInfo>& markers_info, int a
         line(imgMark, features[i].corners[5], features[i].corners[6], Scalar(0, 255, 255), 2.5);
         line(imgMark, features[i].corners[6], features[i].corners[3], Scalar(0, 255, 255), 2.5);
         line(imgMark, features[i].corners[3], features[i].corners[0], Scalar(0, 255, 255), 2.5);
-        circle(imgMark, features[i].feature_center, 1.5, Scalar(107, 90, 219));
 		for (int k = 0; k < 8; k++)
 			circle(imgMark, features[i].corners[k], 3, Scalar(75, 92, 196), -1);
 		ostringstream oss;
-		oss << std::setprecision(3) << features[i].cross_ratio_left;
-		putText(imgMark, oss.str(), features[i].corners[0], FONT_ITALIC, 0.6, Scalar(31, 138, 112), 2);
+		oss << std::setprecision(4) << features[i].ID_left;
+		putText(imgMark, oss.str(), features[i].corners[0], FONT_ITALIC, 0.6, Scalar(250, 250, 250), 2);
 		oss.str("");
-		oss << std::setprecision(3) << features[i].cross_ratio_right;
-		putText(imgMark, oss.str(), features[i].corners[4], FONT_ITALIC, 0.6, Scalar(0, 66, 90), 2);
+		oss << std::setprecision(4) << features[i].ID_right;
+		putText(imgMark, oss.str(), features[i].corners[4], FONT_ITALIC, 0.6, Scalar(250, 250, 90), 2);
     }
 	imshow("Feature Organization", imgMark);
     waitKey(0);
@@ -155,27 +153,27 @@ void CylinderTag::detect(const Mat& img, vector<MarkerInfo>& markers_info, int a
 	markers_info = markers;
 
 	//Plot
-	//imgMark = img.clone();
-	//cvtColor(img, imgMark, COLOR_GRAY2RGB);
-	//for (int i = 0; i < markers.size(); i++) {
-	//	for (int j = 0; j < markers[i].cornerLists.size(); j++) {
-	//		line(imgMark, markers[i].cornerLists[j][0], markers[i].cornerLists[j][1], Scalar(0, 255, 255), 2.5);
-	//		line(imgMark, markers[i].cornerLists[j][1], markers[i].cornerLists[j][2], Scalar(0, 255, 255), 2.5);
-	//		line(imgMark, markers[i].cornerLists[j][2], markers[i].cornerLists[j][7], Scalar(0, 255, 255), 2.5);
-	//		line(imgMark, markers[i].cornerLists[j][7], markers[i].cornerLists[j][4], Scalar(0, 255, 255), 2.5);
-	//		line(imgMark, markers[i].cornerLists[j][4], markers[i].cornerLists[j][5], Scalar(0, 255, 255), 2.5);
-	//		line(imgMark, markers[i].cornerLists[j][5], markers[i].cornerLists[j][6], Scalar(0, 255, 255), 2.5);
-	//		line(imgMark, markers[i].cornerLists[j][6], markers[i].cornerLists[j][3], Scalar(0, 255, 255), 2.5);
-	//		line(imgMark, markers[i].cornerLists[j][3], markers[i].cornerLists[j][0], Scalar(0, 255, 255), 2.5);
-	//		for (int k = 0; k < 8; k++)
-	//			circle(imgMark, markers[i].cornerLists[j][k], 1.5, Scalar(107, 90, 219));
-	//		ostringstream oss;
-	//		oss << markers[i].featurePos[j];
-	//		putText(imgMark, oss.str(), markers[i].cornerLists[j][0], FONT_ITALIC, 0.6, Scalar(20, 200, 255), 2);
-	//	}
-	//}
-	//imshow("Output", imgMark);
-	//waitKey(1);
+	imgMark = img.clone();
+	cvtColor(img, imgMark, COLOR_GRAY2RGB);
+	for (int i = 0; i < markers.size(); i++) {
+		for (int j = 0; j < markers[i].cornerLists.size(); j++) {
+			line(imgMark, markers[i].cornerLists[j][0], markers[i].cornerLists[j][1], Scalar(0, 255, 255), 2.5);
+			line(imgMark, markers[i].cornerLists[j][1], markers[i].cornerLists[j][2], Scalar(0, 255, 255), 2.5);
+			line(imgMark, markers[i].cornerLists[j][2], markers[i].cornerLists[j][7], Scalar(0, 255, 255), 2.5);
+			line(imgMark, markers[i].cornerLists[j][7], markers[i].cornerLists[j][4], Scalar(0, 255, 255), 2.5);
+			line(imgMark, markers[i].cornerLists[j][4], markers[i].cornerLists[j][5], Scalar(0, 255, 255), 2.5);
+			line(imgMark, markers[i].cornerLists[j][5], markers[i].cornerLists[j][6], Scalar(0, 255, 255), 2.5);
+			line(imgMark, markers[i].cornerLists[j][6], markers[i].cornerLists[j][3], Scalar(0, 255, 255), 2.5);
+			line(imgMark, markers[i].cornerLists[j][3], markers[i].cornerLists[j][0], Scalar(0, 255, 255), 2.5);
+			for (int k = 0; k < 8; k++)
+				circle(imgMark, markers[i].cornerLists[j][k], 1.5, Scalar(107, 90, 219));
+			ostringstream oss;
+			oss << markers[i].featurePos[j];
+			putText(imgMark, oss.str(), markers[i].cornerLists[j][0], FONT_ITALIC, 0.6, Scalar(20, 200, 255), 2);
+		}
+	}
+	imshow("Output", imgMark);
+	waitKey(0);
 	
 	start[7] = clock();
 	duration[6] = (double)(start[7] - start[6]) / CLOCKS_PER_SEC; 

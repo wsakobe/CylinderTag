@@ -13,7 +13,6 @@ struct featureInfo{
     int ID_left = -1, ID_right = -1;
     Point2f feature_center;
     float feature_angle, cross_ratio_left, cross_ratio_right;
-    bool firstDarker;
 };
 
 struct MarkerInfo{
@@ -45,17 +44,17 @@ public:
     
     void connectedComponentLabeling(const Mat& src, vector<vector<Point>>& quadArea, int method = 0);
     
-    void edgeExtraction(const Mat& img, vector<vector<Point>>& quadArea, vector<vector<Point2f>>& corners_init, vector<double>& meanG, int KMeansIter = 5);
+    void edgeExtraction(const Mat& img, vector<vector<Point>>& quadArea, vector<vector<Point2f>>& corners_init);
     
     float quadJudgment(vector<corners_pre>& corners, int areaPixelNumber);
 
-    void featureRecovery(vector<vector<Point2f>>& corners_refined, vector<featureInfo>& features, vector<double>& meanG);
+    void featureRecovery(vector<vector<Point2f>>& corners_refined, vector<featureInfo>& features);
 
     void edgeSubPix(const Mat& src, vector<featureInfo>& features, vector<featureInfo>& features_refined, int subPixWindow);
 
     void buildProblem(Problem* problem, vector<Point> inlier_points, vector<float> inlier_pixels);
 
-    featureInfo featureOrganization(vector<Point2f> quad1, vector<Point2f> quad2, Point2f quad1_center, Point2f quad2_center, float feature_angle, bool darker);
+    featureInfo featureOrganization(vector<Point2f> quad1, vector<Point2f> quad2, Point2f quad1_center, Point2f quad2_center, float feature_angle);
 
     void featureExtraction(const Mat& img, vector<featureInfo>& feature_src, vector<featureInfo>& feature_dst);
 
@@ -78,6 +77,8 @@ private:
     // Edge extraction use
     int x_min, x_max, y_min, y_max; // mask size
     long long sum_x, sum_y;
+    Scalar edge_number;
+    void get_orientedEdgePoints(Mat& visited, Point starter, int count);
     vector<corners_pre> get_permutation(int step, int start, vector<corners_pre>& corners, int area);
     bool vis[6];
     int re[6];
@@ -86,13 +87,13 @@ private:
     
     vector<Point> edge_point; 
     Point starter;
-    int x_bias[24] = {0, 1, 1, 1, 0, -1, -1, -1, 0, 1, 2, 2, 2, 2, 2, 1, 0, -1, -2, -2, -2, -2, -2, -1};
-    int y_bias[24] = {-1, -1, 0, 1, 1, 1, 0, -1, -2, -2, -2, -1, 0, 1, 2, 2, 2, 2, 2, 1, 0, -1, -2, -2};
+    int x_bias[8] = {0, 1, 1, 1, 0, -1, -1, -1};
+    int y_bias[8] = {-1, -1, 0, 1, 1, 1, 0, -1};
 
     vector<float> dist2center, dist2line;
     int init, cnt_boundary;
     float normal_line[2];
-    float d_line, dist_expand, threshold_line = 1.5, threshold_expand = 0.8, cost;
+    float d_line, dist_expand, threshold_line = 1.5, threshold_expand = 1, cost;
     Point2f area_center;
     vector<int> span, span_temp;
     vector<int> b;
@@ -111,14 +112,14 @@ private:
 
     // Quad judgment
     float quad_area, RAC;
-    float threshold_RAC = 0.2;
+    float threshold_RAC = 0.3;
     vector<Point2f> corners_pass;
 
     // Edge refinement use
     vector<Point2f> contours;
     vector<Point> inlier_points;
     vector<float> inlier_pixels;
-    float width, pixel_high_low[2], mean_pixel[2], dist;
+    float width, pixel_high_low[2], mean_pixel[2], dist, ratio, point_dist;
     double line_function[3]; 
     int count[2], direction;
 
@@ -131,8 +132,9 @@ private:
     vector<Point2f> corner_centers;
     vector<array<float, 4>> corner_dist;
     vector<float> corner_angles_1, corner_angles_2;
-    float feature_angle, feature_half_length, threshold_angle = 5, dist1_short, dist1_long, dist2_short, dist2_long;
-    bool isVisited[1000], tag1, tag2, tag_darker;
+    float feature_angle, threshold_angle = 5, dist1_short, dist1_long, dist2_short, dist2_long, edge_angle1, edge_angle2, feature_length;
+    Point2f feature_point1, feature_point2;
+    bool isVisited[1000], tag1, tag2;
 
     // Feature organization
     featureInfo Fea;
@@ -142,7 +144,7 @@ private:
     float distance_2points(Point2f point1, Point2f point2);
     float cross_ratio_1, cross_ratio_2, cross_ratio, length_1[4], length_2[4];
     bool label_area, label_instruct;
-    float ID_cr_correspond[5] = {1.4620, 1.6099, 1.7155, 1.7789, 1.8};
+    float ID_cr_correspond[4] = {1.47, 1.54, 1.61, 1.68};
     bool tag_length;
 
     // Marker organization
