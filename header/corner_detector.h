@@ -50,6 +50,8 @@ public:
 
     void featureRecovery(vector<vector<Point2f>>& corners_refined, vector<featureInfo>& features);
 
+    void cornerObtain(const Mat& src, vector<featureInfo>& features);
+
     void edgeSubPix(const Mat& src, vector<featureInfo>& features, vector<featureInfo>& features_refined, int subPixWindow);
 
     void buildProblem(Problem* problem, vector<Point> inlier_points, vector<float> inlier_pixels);
@@ -151,9 +153,9 @@ private:
     int union_find(int input);
     float area(featureInfo feature);
     int father[100];
-    float area_ratio = 0.5, threshold_vertical = 0.5, center_angle;
+    float area_ratio = 0.6, threshold_vertical = 0.5, center_angle, dist_fea;
     Point2f vector_center, vector_longedge;
-    int pose[4] = {0, 1, 4, 5}, cnt;
+    int pose[4] = {0, 1, 4, 5}, cnt, gap;
     vector<int> father_database;
     vector<vector<int>> marker_ID;
 
