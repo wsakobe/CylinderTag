@@ -1136,140 +1136,144 @@ void corner_detector::markerOrganization(vector<featureInfo> feature, vector<Mar
 void corner_detector::featureExtraction(MarkerInfo& marker_src, MarkerInfo& marker_dst, int direction) {
     marker_dst = marker_src;
     for (int i = 0; i < marker_src.cornerLists.size(); i++) {
-        if (1) {
-            length_1[0] = distance_2points(marker_src.cornerLists[i][0], marker_src.cornerLists[i][3]);
-            length_1[1] = distance_2points(marker_src.cornerLists[i][3], marker_src.cornerLists[i][6]);
-            length_1[2] = distance_2points(marker_src.cornerLists[i][6], marker_src.cornerLists[i][5]);
-            length_1[3] = distance_2points(marker_src.cornerLists[i][0], marker_src.cornerLists[i][5]);
-            length_2[0] = distance_2points(marker_src.cornerLists[i][1], marker_src.cornerLists[i][2]);
-            length_2[1] = distance_2points(marker_src.cornerLists[i][2], marker_src.cornerLists[i][7]);
-            length_2[2] = distance_2points(marker_src.cornerLists[i][7], marker_src.cornerLists[i][4]);
-            length_2[3] = distance_2points(marker_src.cornerLists[i][1], marker_src.cornerLists[i][4]);
-
-            cross_ratio_left = (length_1[0] + length_1[1]) * (length_1[2] + length_1[1]) / ((length_1[1] * length_1[3]));
-            cross_ratio_right = (length_2[0] + length_2[1]) * (length_2[2] + length_2[1]) / ((length_2[1] * length_2[3]));
-
-            //cout << length_1[0] << " " << length_1[1] << " " << length_1[2] << " " << length_1[3] << " " << cross_ratio_left << endl;
-            //cout << length_2[0] << " " << length_2[1] << " " << length_2[2] << " " << length_2[3] << " " << cross_ratio_right << endl;
-            Point3f line1, line2, line_cross1, line_cross2, middle_line, line_left, line_right;
-
-            line1.x = marker_src.cornerLists[i][5].y - marker_src.cornerLists[i][4].y;
-            line1.y = marker_src.cornerLists[i][4].x - marker_src.cornerLists[i][5].x;
-            line1.z = -line1.x * marker_src.cornerLists[i][5].x - line1.y * marker_src.cornerLists[i][5].y;
-            line2.x = marker_src.cornerLists[i][0].y - marker_src.cornerLists[i][1].y;
-            line2.y = marker_src.cornerLists[i][1].x - marker_src.cornerLists[i][0].x;
-            line2.z = -line2.x * marker_src.cornerLists[i][0].x - line2.y * marker_src.cornerLists[i][0].y;
-
-            line_cross1.x = marker_src.cornerLists[i][0].y - marker_src.cornerLists[i][4].y;
-            line_cross1.y = marker_src.cornerLists[i][4].x - marker_src.cornerLists[i][0].x;
-            line_cross1.z = -line_cross1.x * marker_src.cornerLists[i][0].x - line_cross1.y * marker_src.cornerLists[i][0].y;
-            line_cross2.x = marker_src.cornerLists[i][5].y - marker_src.cornerLists[i][1].y;
-            line_cross2.y = marker_src.cornerLists[i][1].x - marker_src.cornerLists[i][5].x;
-            line_cross2.z = -line_cross2.x * marker_src.cornerLists[i][5].x - line_cross2.y * marker_src.cornerLists[i][5].y;
-
-            line_left.x = marker_src.cornerLists[i][5].y - marker_src.cornerLists[i][0].y;
-            line_left.y = marker_src.cornerLists[i][0].x - marker_src.cornerLists[i][5].x;
-            line_left.z = -line_left.x * marker_src.cornerLists[i][5].x - line_left.y * marker_src.cornerLists[i][5].y;
-            line_right.x = marker_src.cornerLists[i][1].y - marker_src.cornerLists[i][4].y;
-            line_right.y = marker_src.cornerLists[i][4].x - marker_src.cornerLists[i][1].x;
-            line_right.z = -line_right.x * marker_src.cornerLists[i][1].x - line_right.y * marker_src.cornerLists[i][1].y;
-
-            Point2f vanish_point, middle_point;
-            Mat A(2, 2, CV_32FC1);
-            Mat B(2, 1, CV_32FC1);
-            Mat sol(2, 1, CV_32FC1);
-            A.at<float>(0, 0) = line1.x;
-            A.at<float>(0, 1) = line1.y;
-            A.at<float>(1, 0) = line2.x;
-            A.at<float>(1, 1) = line2.y;
-            B.at<float>(0, 0) = -line1.z;
-            B.at<float>(1, 0) = -line2.z;
-            if (determinant(A) != 0) {
-                solve(A, B, sol);
-                vanish_point.x = sol.at<float>(0, 0);
-                vanish_point.y = sol.at<float>(1, 0);
+        if (!direction) {
+            if (marker_src.cornerLists[i][0].x > marker_src.cornerLists[i][4].x) {
+                swap(marker_dst.cornerLists[i][0], marker_dst.cornerLists[i][4]);
+                swap(marker_dst.cornerLists[i][1], marker_dst.cornerLists[i][5]);
+                swap(marker_dst.cornerLists[i][2], marker_dst.cornerLists[i][6]);
+                swap(marker_dst.cornerLists[i][3], marker_dst.cornerLists[i][7]);
             }
-            A.at<float>(0, 0) = line_cross1.x;
-            A.at<float>(0, 1) = line_cross1.y;
-            A.at<float>(1, 0) = line_cross2.x;
-            A.at<float>(1, 1) = line_cross2.y;
-            B.at<float>(0, 0) = -line_cross1.z;
-            B.at<float>(1, 0) = -line_cross2.z;
-            if (determinant(A) != 0) {
-                solve(A, B, sol);
-                middle_point.x = sol.at<float>(0, 0);
-                middle_point.y = sol.at<float>(1, 0);
-            }
-
-            middle_line.x = middle_point.y - vanish_point.y;
-            middle_line.y = vanish_point.x - middle_point.x;
-            middle_line.z = -middle_line.x * middle_point.x - middle_line.y * middle_point.y;
-
-            Point2f middle_left, middle_right;
-            A.at<float>(0, 0) = middle_line.x;
-            A.at<float>(0, 1) = middle_line.y;
-            A.at<float>(1, 0) = line_left.x;
-            A.at<float>(1, 1) = line_left.y;
-            B.at<float>(0, 0) = -middle_line.z;
-            B.at<float>(1, 0) = -line_left.z;
-            if (determinant(A) != 0) {
-                solve(A, B, sol);
-                middle_left.x = sol.at<float>(0, 0);
-                middle_left.y = sol.at<float>(1, 0);
-            }
-            A.at<float>(0, 0) = middle_line.x;
-            A.at<float>(0, 1) = middle_line.y;
-            A.at<float>(1, 0) = line_right.x;
-            A.at<float>(1, 1) = line_right.y;
-            B.at<float>(0, 0) = -middle_line.z;
-            B.at<float>(1, 0) = -line_right.z;
-            if (determinant(A) != 0) {
-                solve(A, B, sol);
-                middle_right.x = sol.at<float>(0, 0);
-                middle_right.y = sol.at<float>(1, 0);
-            }
-
-            //left ID recovery
-            float dist1, dist2, dist3, dist4;
-            bool is_long_feature = false;
-            dist1 = distance_2points(middle_left, marker_src.cornerLists[i][0]);
-            dist2 = distance_2points(middle_left, marker_src.cornerLists[i][3]);
-            dist3 = distance_2points(middle_left, marker_src.cornerLists[i][5]);
-            dist4 = distance_2points(middle_left, marker_src.cornerLists[i][6]);
-            if (dist2 * dist3 < dist1 * dist4) is_long_feature = true;
-
-            double diff = 0.1;
-            for (int j = 0; j < 4; j++) {
-                if (abs(cross_ratio_left - ID_cr_correspond[j]) < diff) {
-                    diff = abs(cross_ratio_left - ID_cr_correspond[j]);
-                    ID_left = is_long_feature ? 7 - j : j;
-                }
-            }
-
-            //right ID recovery
-            is_long_feature = false;
-            dist1 = distance_2points(middle_left, marker_src.cornerLists[i][1]);
-            dist2 = distance_2points(middle_left, marker_src.cornerLists[i][2]);
-            dist3 = distance_2points(middle_left, marker_src.cornerLists[i][4]);
-            dist4 = distance_2points(middle_left, marker_src.cornerLists[i][7]);
-            if (dist2 * dist3 < dist1 * dist4) is_long_feature = true;
-
-            diff = 0.1;
-            for (int j = 0; j < 4; j++) {
-                if (abs(cross_ratio_right - ID_cr_correspond[j]) < diff) {
-                    diff = abs(cross_ratio_right - ID_cr_correspond[j]);
-                    ID_right = is_long_feature ? 7 - j : j;
-                }
-            }
-            marker_dst.cr_left.push_back(cross_ratio_left);
-            marker_dst.cr_right.push_back(cross_ratio_right);
-            marker_dst.feature_ID_left.push_back(ID_left);
-            marker_dst.feature_ID_right.push_back(ID_right);
-            marker_dst.feature_ID.push_back(ID_left * 8 + ID_right);
         }
-        else {
-            
+
+        length_1[0] = distance_2points(marker_src.cornerLists[i][0], marker_src.cornerLists[i][3]);
+        length_1[1] = distance_2points(marker_src.cornerLists[i][3], marker_src.cornerLists[i][6]);
+        length_1[2] = distance_2points(marker_src.cornerLists[i][6], marker_src.cornerLists[i][5]);
+        length_1[3] = distance_2points(marker_src.cornerLists[i][0], marker_src.cornerLists[i][5]);
+        length_2[0] = distance_2points(marker_src.cornerLists[i][1], marker_src.cornerLists[i][2]);
+        length_2[1] = distance_2points(marker_src.cornerLists[i][2], marker_src.cornerLists[i][7]);
+        length_2[2] = distance_2points(marker_src.cornerLists[i][7], marker_src.cornerLists[i][4]);
+        length_2[3] = distance_2points(marker_src.cornerLists[i][1], marker_src.cornerLists[i][4]);
+
+        cross_ratio_left = (length_1[0] + length_1[1]) * (length_1[2] + length_1[1]) / ((length_1[1] * length_1[3]));
+        cross_ratio_right = (length_2[0] + length_2[1]) * (length_2[2] + length_2[1]) / ((length_2[1] * length_2[3]));
+
+        //cout << length_1[0] << " " << length_1[1] << " " << length_1[2] << " " << length_1[3] << " " << cross_ratio_left << endl;
+        //cout << length_2[0] << " " << length_2[1] << " " << length_2[2] << " " << length_2[3] << " " << cross_ratio_right << endl;
+        Point3f line1, line2, line_cross1, line_cross2, middle_line, line_left, line_right;
+
+        line1.x = marker_src.cornerLists[i][5].y - marker_src.cornerLists[i][4].y;
+        line1.y = marker_src.cornerLists[i][4].x - marker_src.cornerLists[i][5].x;
+        line1.z = -line1.x * marker_src.cornerLists[i][5].x - line1.y * marker_src.cornerLists[i][5].y;
+        line2.x = marker_src.cornerLists[i][0].y - marker_src.cornerLists[i][1].y;
+        line2.y = marker_src.cornerLists[i][1].x - marker_src.cornerLists[i][0].x;
+        line2.z = -line2.x * marker_src.cornerLists[i][0].x - line2.y * marker_src.cornerLists[i][0].y;
+
+        line_cross1.x = marker_src.cornerLists[i][0].y - marker_src.cornerLists[i][4].y;
+        line_cross1.y = marker_src.cornerLists[i][4].x - marker_src.cornerLists[i][0].x;
+        line_cross1.z = -line_cross1.x * marker_src.cornerLists[i][0].x - line_cross1.y * marker_src.cornerLists[i][0].y;
+        line_cross2.x = marker_src.cornerLists[i][5].y - marker_src.cornerLists[i][1].y;
+        line_cross2.y = marker_src.cornerLists[i][1].x - marker_src.cornerLists[i][5].x;
+        line_cross2.z = -line_cross2.x * marker_src.cornerLists[i][5].x - line_cross2.y * marker_src.cornerLists[i][5].y;
+
+        line_left.x = marker_src.cornerLists[i][5].y - marker_src.cornerLists[i][0].y;
+        line_left.y = marker_src.cornerLists[i][0].x - marker_src.cornerLists[i][5].x;
+        line_left.z = -line_left.x * marker_src.cornerLists[i][5].x - line_left.y * marker_src.cornerLists[i][5].y;
+        line_right.x = marker_src.cornerLists[i][1].y - marker_src.cornerLists[i][4].y;
+        line_right.y = marker_src.cornerLists[i][4].x - marker_src.cornerLists[i][1].x;
+        line_right.z = -line_right.x * marker_src.cornerLists[i][1].x - line_right.y * marker_src.cornerLists[i][1].y;
+
+        Point2f vanish_point, middle_point;
+        Mat A(2, 2, CV_32FC1);
+        Mat B(2, 1, CV_32FC1);
+        Mat sol(2, 1, CV_32FC1);
+        A.at<float>(0, 0) = line1.x;
+        A.at<float>(0, 1) = line1.y;
+        A.at<float>(1, 0) = line2.x;
+        A.at<float>(1, 1) = line2.y;
+        B.at<float>(0, 0) = -line1.z;
+        B.at<float>(1, 0) = -line2.z;
+        if (determinant(A) != 0) {
+            solve(A, B, sol);
+            vanish_point.x = sol.at<float>(0, 0);
+            vanish_point.y = sol.at<float>(1, 0);
         }
+        A.at<float>(0, 0) = line_cross1.x;
+        A.at<float>(0, 1) = line_cross1.y;
+        A.at<float>(1, 0) = line_cross2.x;
+        A.at<float>(1, 1) = line_cross2.y;
+        B.at<float>(0, 0) = -line_cross1.z;
+        B.at<float>(1, 0) = -line_cross2.z;
+        if (determinant(A) != 0) {
+            solve(A, B, sol);
+            middle_point.x = sol.at<float>(0, 0);
+            middle_point.y = sol.at<float>(1, 0);
+        }
+
+        middle_line.x = middle_point.y - vanish_point.y;
+        middle_line.y = vanish_point.x - middle_point.x;
+        middle_line.z = -middle_line.x * middle_point.x - middle_line.y * middle_point.y;
+
+        Point2f middle_left, middle_right;
+        A.at<float>(0, 0) = middle_line.x;
+        A.at<float>(0, 1) = middle_line.y;
+        A.at<float>(1, 0) = line_left.x;
+        A.at<float>(1, 1) = line_left.y;
+        B.at<float>(0, 0) = -middle_line.z;
+        B.at<float>(1, 0) = -line_left.z;
+        if (determinant(A) != 0) {
+            solve(A, B, sol);
+            middle_left.x = sol.at<float>(0, 0);
+            middle_left.y = sol.at<float>(1, 0);
+        }
+        A.at<float>(0, 0) = middle_line.x;
+        A.at<float>(0, 1) = middle_line.y;
+        A.at<float>(1, 0) = line_right.x;
+        A.at<float>(1, 1) = line_right.y;
+        B.at<float>(0, 0) = -middle_line.z;
+        B.at<float>(1, 0) = -line_right.z;
+        if (determinant(A) != 0) {
+            solve(A, B, sol);
+            middle_right.x = sol.at<float>(0, 0);
+            middle_right.y = sol.at<float>(1, 0);
+        }
+
+        //left ID recovery
+        float dist1, dist2, dist3, dist4;
+        bool is_long_feature = false;
+        dist1 = distance_2points(middle_left, marker_src.cornerLists[i][0]);
+        dist2 = distance_2points(middle_left, marker_src.cornerLists[i][3]);
+        dist3 = distance_2points(middle_left, marker_src.cornerLists[i][5]);
+        dist4 = distance_2points(middle_left, marker_src.cornerLists[i][6]);
+        if (dist2 * dist3 < dist1 * dist4) is_long_feature = true;
+
+        double diff = 0.1;
+        for (int j = 0; j < 4; j++) {
+            if (abs(cross_ratio_left - ID_cr_correspond[j]) < diff) {
+                diff = abs(cross_ratio_left - ID_cr_correspond[j]);
+                ID_left = is_long_feature ? 7 - j : j;
+            }
+        }
+
+        //right ID recovery
+        is_long_feature = false;
+        dist1 = distance_2points(middle_left, marker_src.cornerLists[i][1]);
+        dist2 = distance_2points(middle_left, marker_src.cornerLists[i][2]);
+        dist3 = distance_2points(middle_left, marker_src.cornerLists[i][4]);
+        dist4 = distance_2points(middle_left, marker_src.cornerLists[i][7]);
+        if (dist2 * dist3 < dist1 * dist4) is_long_feature = true;
+
+        diff = 0.1;
+        for (int j = 0; j < 4; j++) {
+            if (abs(cross_ratio_right - ID_cr_correspond[j]) < diff) {
+                diff = abs(cross_ratio_right - ID_cr_correspond[j]);
+                ID_right = is_long_feature ? 7 - j : j;
+            }
+        }
+        marker_dst.cr_left.push_back(cross_ratio_left);
+        marker_dst.cr_right.push_back(cross_ratio_right);
+        marker_dst.feature_ID_left.push_back(ID_left);
+        marker_dst.feature_ID_right.push_back(ID_right);
+        marker_dst.feature_ID.push_back(ID_left * 8 + ID_right);
     }
 }
 

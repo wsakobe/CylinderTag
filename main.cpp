@@ -70,7 +70,7 @@ void read_from_video(const string& path){
 		cvtColor(frame, img_gray, COLOR_BGR2GRAY);
 		marker.detect(img_gray, markers, 5, true, 3);
 		for (int i = 0; i < markers.size(); i++)
-			cout << "ID " << i << ": " << markers[i].markerID << endl;
+			cout << "ID " << i << ": " << markers[i].markerID + 1 << endl;
 		//marker.estimatePose(img_gray, markers, marker_model, camera, rvec, tvec, false);
 		//marker.drawAxis(img_gray, markers, marker_model, rvec, tvec, camera, 10);
 	}

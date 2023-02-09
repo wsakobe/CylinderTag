@@ -133,7 +133,7 @@ void CylinderTag::detect(const Mat& img, vector<MarkerInfo>& markers_info, int a
 	markers_info = markers;
 
 	//Plot
-	for (int i = 0; i < features.size(); i++){
+	/*for (int i = 0; i < features.size(); i++){
 		line(imgMark, features[i].corners[0], features[i].corners[1], Scalar(0, 255, 255), 2.5);
 		line(imgMark, features[i].corners[1], features[i].corners[2], Scalar(0, 255, 255), 2.5);
 		line(imgMark, features[i].corners[2], features[i].corners[7], Scalar(0, 255, 255), 2.5);
@@ -146,7 +146,7 @@ void CylinderTag::detect(const Mat& img, vector<MarkerInfo>& markers_info, int a
 			circle(imgMark, features[i].corners[k], 3, Scalar(75, 92, 196), -1);
 	}
 	imshow("Feature Organization", imgMark);
-	waitKey(0);
+	waitKey(0);*/
 
 	imgMark = img.clone();
 	cvtColor(img, imgMark, COLOR_GRAY2RGB);
@@ -174,7 +174,7 @@ void CylinderTag::detect(const Mat& img, vector<MarkerInfo>& markers_info, int a
 		}
 	}
 	imshow("Output", imgMark);
-	waitKey(0);
+	waitKey(1);
 	
 	start[7] = clock();
 	duration[6] = (double)(start[7] - start[6]) / CLOCKS_PER_SEC; 
