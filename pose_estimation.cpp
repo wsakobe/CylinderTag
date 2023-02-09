@@ -17,7 +17,7 @@ void PoseEstimator::PnPSolver(MarkerInfo markers, vector<ModelInfo> reconstruct_
 			model_points.push_back(reconstruct_model[ID].corners[markers.featurePos[j] * 8 + k]);
 		}
 	}
-	solvePnPRansac(model_points, image_points, camera.Intrinsic, camera.distCoeffs, rvec, tvec, false, 100, 1, 0.99, noArray(), SOLVEPNP_EPNP);
+	solvePnPRansac(model_points, image_points, camera.Intrinsic, camera.distCoeffs, rvec, tvec, false, 100, 2, 0.99, noArray(), SOLVEPNP_EPNP);
 	//solvePnPRefineLM(model_points, image_points, camera.Intrinsic, camera.distCoeffs, rvec, tvec, TermCriteria(TermCriteria::EPS + TermCriteria::COUNT, 20, 0.5));
 }
 

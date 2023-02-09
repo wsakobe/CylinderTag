@@ -69,8 +69,8 @@ void read_from_video(const string& path){
 		cout << cnt++ << endl;
 		cvtColor(frame, img_gray, COLOR_BGR2GRAY);
 		marker.detect(img_gray, markers, 5, true, 3);
-		marker.estimatePose(img_gray, markers, marker_model, camera, rvec, tvec, false);
-		marker.drawAxis(img_gray, markers, marker_model, rvec, tvec, camera, 10);
+		//marker.estimatePose(img_gray, markers, marker_model, camera, rvec, tvec, false);
+		//marker.drawAxis(img_gray, markers, marker_model, rvec, tvec, camera, 10);
 	}
 }
 

@@ -57,8 +57,8 @@ void CylinderTag::check_dictionary(const Mat1i& input_state)
 {
 		for (int i : input_state)
 		{
-			if (!(i > 0 && i <= 63))
-				throw __FUNCTION__ + string(", ") + "the number in state matrix must between 1 to 63\n";
+			if (!(i >= 0 && i <= 63))
+				throw __FUNCTION__ + string(", ") + "the number in state matrix must between 0 to 63\n";
 		}
 		
 		return;

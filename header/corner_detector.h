@@ -32,7 +32,7 @@ struct corners_pre{
 struct pos_with_ID{
     vector<int> pos;
     int ID = -1;
-    bool isGood = false;
+    bool isGood = false, inverse = false;
 };
 
 class corner_detector{

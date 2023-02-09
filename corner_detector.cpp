@@ -1055,11 +1055,11 @@ void corner_detector::featureExtraction(const Mat& img, vector<featureInfo>& fea
         length_2[2] = distance_2points(feature_src[i].corners[7], feature_src[i].corners[4]);
         length_2[3] = distance_2points(feature_src[i].corners[1], feature_src[i].corners[4]);
 
-        feature_dst[i].cross_ratio_left  = (length_1[0] + length_1[1]) * (length_1[2] + length_1[1]) / ((length_1[1] * length_1[3])) + 0.01;
+        feature_dst[i].cross_ratio_left  = (length_1[0] + length_1[1]) * (length_1[2] + length_1[1]) / ((length_1[1] * length_1[3]));
         feature_dst[i].cross_ratio_right = (length_2[0] + length_2[1]) * (length_2[2] + length_2[1]) / ((length_2[1] * length_2[3]));
         
-        cout << length_1[0] << " " << length_1[1] << " " << length_1[2] << " " << length_1[3] << " " << feature_dst[i].cross_ratio_left << endl;
-        cout << length_2[0] << " " << length_2[1] << " " << length_2[2] << " " << length_2[3] << " " << feature_dst[i].cross_ratio_right << endl;
+        //cout << length_1[0] << " " << length_1[1] << " " << length_1[2] << " " << length_1[3] << " " << feature_dst[i].cross_ratio_left << endl;
+        //cout << length_2[0] << " " << length_2[1] << " " << length_2[2] << " " << length_2[3] << " " << feature_dst[i].cross_ratio_right << endl;
         Point3f line1, line2, line_cross1, line_cross2, middle_line, line_left, line_right;
         
         line1.x = feature_src[i].corners[5].y - feature_src[i].corners[4].y;
@@ -1250,10 +1250,14 @@ void corner_detector::markerDecoder(vector<MarkerInfo> markers_src, vector<Marke
     for (int i = 0; i < markers_src.size(); i++){
         if (markers_src[i].feature_center.size() < featureSize) continue;
         MarkerInfo marker_temp;
-        marker_angle = fastAtan2(markers_src[i].feature_center[0].y - markers_src[i].feature_center[1].y, markers_src[i].feature_center[0].x - markers_src[i].feature_center[1].x);
+        marker_angle = 0;
+        for (int j = 0; j < markers_src[i].cornerLists.size(); j++) {
+            marker_angle += fastAtan2(markers_src[i].cornerLists[j][0].y - markers_src[i].cornerLists[j][5].y, markers_src[i].cornerLists[j][0].x - markers_src[i].cornerLists[j][5].x);
+        }
+        marker_angle /= markers_src[i].cornerLists.size();
         if (marker_angle > 180) marker_angle -= 180;
 
-        if (abs(marker_angle) > 45 && abs(marker_angle) < 135){
+        if (abs(marker_angle) < 45 || abs(marker_angle) > 135){
             auto p = sort_permutation(markers_src[i].feature_center,
                 [](const auto& a, const auto& b) { return a.y > b.y; });
             markers_src[i].feature_center = apply_permutation(markers_src[i].feature_center, p);
@@ -1287,6 +1291,14 @@ void corner_detector::markerDecoder(vector<MarkerInfo> markers_src, vector<Marke
             marker_temp = markers_src[i];
             marker_temp.markerID = Pos_ID.ID;
             marker_temp.featurePos = Pos_ID.pos;
+            if (Pos_ID.inverse) {
+                for (int it = 0; it < marker_temp.cornerLists.size(); it++) {
+                    swap(marker_temp.cornerLists[it][0], marker_temp.cornerLists[it][4]);
+                    swap(marker_temp.cornerLists[it][1], marker_temp.cornerLists[it][5]);
+                    swap(marker_temp.cornerLists[it][2], marker_temp.cornerLists[it][6]);
+                    swap(marker_temp.cornerLists[it][3], marker_temp.cornerLists[it][7]);
+                }                
+            }
             markers_dst.push_back(marker_temp);
         }        
     }
@@ -1303,7 +1315,6 @@ int corner_detector::union_find(int x){
 float corner_detector::area(featureInfo feature){
     float feature_area = 0;
     for (int i = 0; i < 4; i++){
-        cout << pose[i] << " " << pose[(i + 1) % 4] << endl;
         feature_area += feature.corners[pose[i]].x * feature.corners[pose[(i + 1) % 4]].y - feature.corners[pose[i]].y * feature.corners[pose[(i + 1) % 4]].x; 
     }
     feature_area /= 2;
@@ -1316,6 +1327,7 @@ pos_with_ID corner_detector::match_dictionary(int *code, Mat1i& state, int lengt
     second_coverage = -1;
     coverage_now = -1;
     POS_ID.isGood = false;
+    POS_ID.inverse = false;
 
     for (int i = 0; i < state.rows; i++){
         for (int j = 0; j < state.cols; j++){
@@ -1339,7 +1351,7 @@ pos_with_ID corner_detector::match_dictionary(int *code, Mat1i& state, int lengt
         for (int j = 0; j < state.cols; j++){
             coverage_now = 0;
             for (int k = 0; k <= length; k++){
-                if (state.at<int>(i, (j - k + state.cols) % state.cols) == ((7 - code[k] / 8) * 8 + (7 - code[k] % 8))){
+                if (state.at<int>(i, (j - k + state.cols) % state.cols) == ((7 - code[k] / 8) + (7 - code[k] % 8) * 8)){
                     coverage_now++;
                 }
             }
@@ -1353,9 +1365,10 @@ pos_with_ID corner_detector::match_dictionary(int *code, Mat1i& state, int lengt
             }
         }
     }
-    if (max_coverage > 0.8 * legal_bits && max_coverage > second_coverage){
+    if (max_coverage >= min(0.8 * legal_bits, legal_bits - 1) && max_coverage > second_coverage){
         POS_ID.ID = max_coverage_pos.x;
         POS_ID.isGood = true;
+        if (direc == -1) POS_ID.inverse = true;
         for (int i = 0; i <= length; i++){
             if (code[i] != -1){
                 POS_ID.pos.push_back((max_coverage_pos.y + direc * i + state.cols) % state.cols);
