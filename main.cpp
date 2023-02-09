@@ -22,7 +22,7 @@ int main(int argc, char** argv){
 	//	read_from_image(filepath, i);
 	//}
 	//read_from_image(".\\Data\\l3.bmp", 1);
-	read_from_video(".\\Data\\v4.avi");
+	read_from_video(".\\Data\\v6.avi");
 		
 	system("pause");
 	return 0;
@@ -69,6 +69,8 @@ void read_from_video(const string& path){
 		cout << cnt++ << endl;
 		cvtColor(frame, img_gray, COLOR_BGR2GRAY);
 		marker.detect(img_gray, markers, 5, true, 3);
+		for (int i = 0; i < markers.size(); i++)
+			cout << "ID " << i << ": " << markers[i].markerID << endl;
 		//marker.estimatePose(img_gray, markers, marker_model, camera, rvec, tvec, false);
 		//marker.drawAxis(img_gray, markers, marker_model, rvec, tvec, camera, 10);
 	}

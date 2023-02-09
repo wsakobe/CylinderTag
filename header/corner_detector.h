@@ -10,17 +10,16 @@ using namespace ceres;
 
 struct featureInfo{
     vector<Point2f> corners;
-    int ID_left = -1, ID_right = -1;
     Point2f feature_center;
-    float feature_angle, cross_ratio_left, cross_ratio_right;
+    float feature_angle;
 };
 
 struct MarkerInfo{
     int markerID = -1;
-    vector<int> featurePos, feature_ID;
+    vector<int> featurePos, feature_ID, feature_ID_left, feature_ID_right;
     vector<vector<Point2f>> cornerLists;
     vector<Point2f> feature_center;
-    vector<float> edge_length;
+    vector<float> edge_length, cr_left, cr_right;
 };
 
 struct corners_pre{
@@ -58,7 +57,7 @@ public:
 
     featureInfo featureOrganization(vector<Point2f> quad1, vector<Point2f> quad2, Point2f quad1_center, Point2f quad2_center, float feature_angle);
 
-    void featureExtraction(const Mat& img, vector<featureInfo>& feature_src, vector<featureInfo>& feature_dst);
+    void featureExtraction(MarkerInfo& marker_src, MarkerInfo& marker_dst, int direc);
 
     void markerOrganization(vector<featureInfo> feature, vector<MarkerInfo>& markers);
 
@@ -144,7 +143,8 @@ private:
 
     // Feature extraction
     float distance_2points(Point2f point1, Point2f point2);
-    float cross_ratio_1, cross_ratio_2, cross_ratio, length_1[4], length_2[4];
+    float cross_ratio_left, cross_ratio_right, cross_ratio, length_1[4], length_2[4];
+    int ID_left, ID_right;
     bool label_area, label_instruct;
     float ID_cr_correspond[4] = {1.47, 1.54, 1.61, 1.68};
     bool tag_length;

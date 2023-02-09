@@ -123,63 +123,62 @@ void CylinderTag::detect(const Mat& img, vector<MarkerInfo>& markers_info, int a
 		
 	start[5] = clock();
 	duration[4] = (double)(start[5] - start[4]) / CLOCKS_PER_SEC;
-	    
-	detector.featureExtraction(img, features, features);
+	    	    
+	detector.markerOrganization(features, markers);
 
 	start[6] = clock();
-	duration[5] = (double)(start[6] - start[5]) / CLOCKS_PER_SEC; 
-	
-	for (int i = 0; i < features.size(); i++){
-        line(imgMark, features[i].corners[0], features[i].corners[1], Scalar(0, 255, 255), 2.5);
-        line(imgMark, features[i].corners[1], features[i].corners[2], Scalar(0, 255, 255), 2.5);
-        line(imgMark, features[i].corners[2], features[i].corners[7], Scalar(0, 255, 255), 2.5);
-        line(imgMark, features[i].corners[7], features[i].corners[4], Scalar(0, 255, 255), 2.5);
-        line(imgMark, features[i].corners[4], features[i].corners[5], Scalar(0, 255, 255), 2.5);
-        line(imgMark, features[i].corners[5], features[i].corners[6], Scalar(0, 255, 255), 2.5);
-        line(imgMark, features[i].corners[6], features[i].corners[3], Scalar(0, 255, 255), 2.5);
-        line(imgMark, features[i].corners[3], features[i].corners[0], Scalar(0, 255, 255), 2.5);
-		for (int k = 0; k < 8; k++)
-			circle(imgMark, features[i].corners[k], 3, Scalar(75, 92, 196), -1);
-		ostringstream oss;
-		oss << std::setprecision(4) << features[i].ID_left;
-		putText(imgMark, oss.str(), features[i].corners[0], FONT_ITALIC, 0.6, Scalar(250, 250, 250), 2);
-		oss.str("");
-		oss << std::setprecision(4) << features[i].ID_right;
-		putText(imgMark, oss.str(), features[i].corners[4], FONT_ITALIC, 0.6, Scalar(250, 250, 90), 2);
-    }
-	imshow("Feature Organization", imgMark);
-    waitKey(0);
-    
-	detector.markerOrganization(features, markers);
+	duration[5] = (double)(start[6] - start[5]) / CLOCKS_PER_SEC;
+
 	detector.markerDecoder(markers, markers, this->state, this->featureSize);
 	markers_info = markers;
 
 	//Plot
-	//imgMark = img.clone();
-	//cvtColor(img, imgMark, COLOR_GRAY2RGB);
-	//for (int i = 0; i < markers.size(); i++) {
-	//	for (int j = 0; j < markers[i].cornerLists.size(); j++) {
-	//		line(imgMark, markers[i].cornerLists[j][0], markers[i].cornerLists[j][1], Scalar(0, 255, 255), 2.5);
-	//		line(imgMark, markers[i].cornerLists[j][1], markers[i].cornerLists[j][2], Scalar(0, 255, 255), 2.5);
-	//		line(imgMark, markers[i].cornerLists[j][2], markers[i].cornerLists[j][7], Scalar(0, 255, 255), 2.5);
-	//		line(imgMark, markers[i].cornerLists[j][7], markers[i].cornerLists[j][4], Scalar(0, 255, 255), 2.5);
-	//		line(imgMark, markers[i].cornerLists[j][4], markers[i].cornerLists[j][5], Scalar(0, 255, 255), 2.5);
-	//		line(imgMark, markers[i].cornerLists[j][5], markers[i].cornerLists[j][6], Scalar(0, 255, 255), 2.5);
-	//		line(imgMark, markers[i].cornerLists[j][6], markers[i].cornerLists[j][3], Scalar(0, 255, 255), 2.5);
-	//		line(imgMark, markers[i].cornerLists[j][3], markers[i].cornerLists[j][0], Scalar(0, 255, 255), 2.5);
-	//		for (int k = 0; k < 8; k++)
-	//			circle(imgMark, markers[i].cornerLists[j][k], 1.5, Scalar(107, 90, 219));
-	//		ostringstream oss;
-	//		oss << markers[i].featurePos[j];
-	//		putText(imgMark, oss.str(), markers[i].cornerLists[j][0], FONT_ITALIC, 0.6, Scalar(20, 200, 255), 2);
-	//	}
-	//}
-	//imshow("Output", imgMark);
-	//waitKey(0);
+	for (int i = 0; i < features.size(); i++){
+		line(imgMark, features[i].corners[0], features[i].corners[1], Scalar(0, 255, 255), 2.5);
+		line(imgMark, features[i].corners[1], features[i].corners[2], Scalar(0, 255, 255), 2.5);
+		line(imgMark, features[i].corners[2], features[i].corners[7], Scalar(0, 255, 255), 2.5);
+		line(imgMark, features[i].corners[7], features[i].corners[4], Scalar(0, 255, 255), 2.5);
+		line(imgMark, features[i].corners[4], features[i].corners[5], Scalar(0, 255, 255), 2.5);
+		line(imgMark, features[i].corners[5], features[i].corners[6], Scalar(0, 255, 255), 2.5);
+		line(imgMark, features[i].corners[6], features[i].corners[3], Scalar(0, 255, 255), 2.5);
+		line(imgMark, features[i].corners[3], features[i].corners[0], Scalar(0, 255, 255), 2.5);
+		for (int k = 0; k < 8; k++)
+			circle(imgMark, features[i].corners[k], 3, Scalar(75, 92, 196), -1);
+	}
+	imshow("Feature Organization", imgMark);
+	waitKey(0);
+
+	imgMark = img.clone();
+	cvtColor(img, imgMark, COLOR_GRAY2RGB);
+	for (int i = 0; i < markers.size(); i++) {
+		for (int j = 0; j < markers[i].cornerLists.size(); j++) {
+			line(imgMark, markers[i].cornerLists[j][0], markers[i].cornerLists[j][1], Scalar(0, 255, 255), 2.5);
+			line(imgMark, markers[i].cornerLists[j][1], markers[i].cornerLists[j][2], Scalar(0, 255, 255), 2.5);
+			line(imgMark, markers[i].cornerLists[j][2], markers[i].cornerLists[j][7], Scalar(0, 255, 255), 2.5);
+			line(imgMark, markers[i].cornerLists[j][7], markers[i].cornerLists[j][4], Scalar(0, 255, 255), 2.5);
+			line(imgMark, markers[i].cornerLists[j][4], markers[i].cornerLists[j][5], Scalar(0, 255, 255), 2.5);
+			line(imgMark, markers[i].cornerLists[j][5], markers[i].cornerLists[j][6], Scalar(0, 255, 255), 2.5);
+			line(imgMark, markers[i].cornerLists[j][6], markers[i].cornerLists[j][3], Scalar(0, 255, 255), 2.5);
+			line(imgMark, markers[i].cornerLists[j][3], markers[i].cornerLists[j][0], Scalar(0, 255, 255), 2.5);
+			for (int k = 0; k < 8; k++)
+				circle(imgMark, markers[i].cornerLists[j][k], 1.5, Scalar(107, 90, 219));
+			ostringstream oss;
+			oss << std::setprecision(4) << markers[i].feature_ID_left[j];
+			putText(imgMark, oss.str(), markers[i].cornerLists[j][0], FONT_ITALIC, 0.6, Scalar(250, 250, 250), 2);
+			oss.str("");
+			oss << std::setprecision(4) << markers[i].feature_ID_right[j];
+			putText(imgMark, oss.str(), markers[i].cornerLists[j][4], FONT_ITALIC, 0.6, Scalar(250, 250, 90), 2);
+			oss.str("");
+			oss << markers[i].featurePos[j];
+			putText(imgMark, oss.str(), markers[i].cornerLists[j][1], FONT_ITALIC, 0.6, Scalar(20, 100, 155), 2);
+		}
+	}
+	imshow("Output", imgMark);
+	waitKey(0);
 	
 	start[7] = clock();
 	duration[6] = (double)(start[7] - start[6]) / CLOCKS_PER_SEC; 
-	cout << duration[0] * 1000 << " " << duration[1] * 1000 << " " << duration[2] * 1000 << " " << duration[3] * 1000 << " " << duration[4] * 1000 << " " << duration[5] * 1000 << " " << duration[6] * 1000 << " " << endl;
+	cout << duration[0] * 1000 << " " << duration[1] * 1000 << " " << duration[2] * 1000 << " " << duration[3] * 1000 << " " << duration[4] * 1000 << " " << duration[5] * 1000 << " " << duration[6] * 1000 << endl;
 	double ttime = duration[0] + duration[1] + duration[2] + duration[3] + duration[4] + duration[5] + duration[6];
 	cout << "Total time: " << ttime * 1000 << endl;
 }
