@@ -4,7 +4,7 @@ using namespace std;
 using namespace cv;
 
 
-void PoseEstimator::PnPSolver(MarkerInfo markers, vector<ModelInfo> reconstruct_model, CamInfo camera, Mat& rvec, Mat& tvec)
+void PoseEstimator::PnPSolver(MarkerInfo markers, vector<ModelInfo> reconstruct_model, CamInfo camera, PoseInfo& pose)
 {
 	image_points.clear();
 	model_points.clear();
@@ -17,11 +17,11 @@ void PoseEstimator::PnPSolver(MarkerInfo markers, vector<ModelInfo> reconstruct_
 			model_points.push_back(reconstruct_model[ID].corners[markers.featurePos[j] * 8 + k]);
 		}
 	}
-	solvePnPRansac(model_points, image_points, camera.Intrinsic, camera.distCoeffs, rvec, tvec, false, 100, 2, 0.99, noArray(), SOLVEPNP_EPNP);
+	solvePnPRansac(model_points, image_points, camera.Intrinsic, camera.distCoeffs, pose.rvec, pose.tvec, false, 100, 2, 0.99, noArray(), SOLVEPNP_EPNP);
 	//solvePnPRefineLM(model_points, image_points, camera.Intrinsic, camera.distCoeffs, rvec, tvec, TermCriteria(TermCriteria::EPS + TermCriteria::COUNT, 20, 0.5));
 }
 
-void PoseEstimator::DenseSolver(const Mat& img, vector<ModelInfo> reconstruct_model, Mat& rvec, Mat& tvec)
+void PoseEstimator::DenseSolver(const Mat& img, vector<ModelInfo> reconstruct_model, PoseInfo& pose)
 {
 	// To be updated
 }

@@ -219,27 +219,26 @@ void CylinderTag::loadCamera(const string& path, CamInfo& camera){
 	fs["distCoeffs"] >> camera.distCoeffs;
 }
 
-void CylinderTag::estimatePose(const Mat& img, vector<MarkerInfo> markers, vector<ModelInfo> reconstruct_model, CamInfo camera, vector<Mat>& rvec, vector<Mat>& tvec, bool useDensePoseRefine){
-	rvec.resize(markers.size());
-	tvec.resize(markers.size());
+void CylinderTag::estimatePose(const Mat& img, vector<MarkerInfo> markers, vector<ModelInfo> reconstruct_model, CamInfo camera, vector<PoseInfo>& pose, bool useDensePoseRefine){
+	pose.resize(markers.size());
 	for (int i = 0; i < markers.size(); i++) {
-		estimator.PnPSolver(markers[i], reconstruct_model, camera, rvec[i], tvec[i]);
+		estimator.PnPSolver(markers[i], reconstruct_model, camera, pose[i]);
 		if (useDensePoseRefine)
-			estimator.DenseSolver(img, reconstruct_model, rvec[i], tvec[i]);
+			estimator.DenseSolver(img, reconstruct_model, pose[i]);
 	}	
 }
 
-void CylinderTag::drawAxis(const Mat& img, vector<MarkerInfo> markers, vector<ModelInfo> reconstruct_model, vector<Mat>& rvec, vector<Mat>& tvec, CamInfo camera, int length = 5){
+void CylinderTag::drawAxis(const Mat& img, vector<MarkerInfo> markers, vector<ModelInfo> reconstruct_model, vector<PoseInfo>& pose, CamInfo camera, int axisLength = 5){
 	// Display
 	Mat imgMark(img.rows, img.cols, CV_32FC3);
 	cvtColor(img, imgMark, COLOR_GRAY2RGB);
 
 	vector<Point2f> imagePoints, image_points;
 	vector<Point3f> model_points;
-	for (int i = 0; i < markers.size(); i++) {
+	for (int i = 0; i < pose.size(); i++) {
 		model_points.clear();
 		image_points.clear();
-		int ID = markers[i].markerID;
+		int ID = pose[i].markerID;
 		for (int j = 0; j < markers[i].cornerLists.size(); j++) {
 			for (int k = 0; k < 8; k++) {
 				model_points.push_back(reconstruct_model[ID].corners[markers[i].featurePos[j] * 8 + k]);
@@ -247,12 +246,12 @@ void CylinderTag::drawAxis(const Mat& img, vector<MarkerInfo> markers, vector<Mo
 			}
 		}
 		model_points.push_back(reconstruct_model[ID].base);
-		model_points.push_back(reconstruct_model[ID].base + reconstruct_model[ID].axis * length);
-		model_points.push_back(reconstruct_model[ID].base + Point3f(0.0372, 0.0372, 0.9986) * length);
-		model_points.push_back(reconstruct_model[ID].base + Point3f(0.9980, -0.0520, -0.0353) * length);
+		model_points.push_back(reconstruct_model[ID].base + reconstruct_model[ID].axis * axisLength);
+		model_points.push_back(reconstruct_model[ID].base + Point3f(0.0372, 0.0372, 0.9986) * axisLength);
+		model_points.push_back(reconstruct_model[ID].base + Point3f(0.9980, -0.0520, -0.0353) * axisLength);
 
 		imagePoints.clear();
-		projectPoints(model_points, rvec[i], tvec[i], camera.Intrinsic, camera.distCoeffs, imagePoints);
+		projectPoints(model_points, pose[i].rvec, pose[i].tvec, camera.Intrinsic, camera.distCoeffs, imagePoints);
 		for (int i = 0; i < imagePoints.size() - 4; i++) {
 			circle(imgMark, imagePoints[i], 5, Scalar(255, 234, 32), -1);
 		}

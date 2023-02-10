@@ -7,7 +7,7 @@ Mat frame, img_gray;
 vector<MarkerInfo> markers;
 vector<ModelInfo> marker_model;
 CamInfo camera;
-vector<Mat> rvec, tvec;
+vector<PoseInfo> pose;
 
 void read_from_image(const string& path, int num);
 void read_from_video(const string& path);
@@ -22,7 +22,7 @@ int main(int argc, char** argv){
 	//	read_from_image(filepath, i);
 	//}
 	//read_from_image(".\\Data\\l3.bmp", 1);
-	read_from_video(".\\Data\\v6.avi");
+	read_from_video(".\\Data\\v1.avi");
 		
 	system("pause");
 	return 0;
@@ -37,8 +37,8 @@ void read_from_image(const string& path, int num){
 
 	cvtColor(frame, img_gray, COLOR_BGR2GRAY);
 	marker.detect(img_gray, markers, 5, true, 5);
-	marker.estimatePose(img_gray, markers, marker_model, camera, rvec, tvec, false);
-	marker.drawAxis(img_gray, markers, marker_model, rvec, tvec, camera, 8);
+	marker.estimatePose(img_gray, markers, marker_model, camera, pose, false);
+	marker.drawAxis(img_gray, markers, marker_model, pose, camera, 8);
 
 	//Output
 	//string fname = ".\\Recon\\l";
@@ -68,11 +68,11 @@ void read_from_video(const string& path){
 			capture.read(frame);
 		cout << cnt++ << endl;
 		cvtColor(frame, img_gray, COLOR_BGR2GRAY);
-		marker.detect(img_gray, markers, 5, true, 3);
+		marker.detect(img_gray, markers, 5, false, 3);
 		for (int i = 0; i < markers.size(); i++)
 			cout << "ID " << i << ": " << markers[i].markerID + 1 << endl;
-		//marker.estimatePose(img_gray, markers, marker_model, camera, rvec, tvec, false);
-		//marker.drawAxis(img_gray, markers, marker_model, rvec, tvec, camera, 10);
+		marker.estimatePose(img_gray, markers, marker_model, camera, pose, false);
+		marker.drawAxis(img_gray, markers, marker_model, pose, camera, 8);
 	}
 }
 

@@ -18,13 +18,18 @@ struct ModelInfo {
     vector<Point3f> corners;
 };
 
+struct PoseInfo {
+    int markerID;
+    Mat rvec, tvec;
+};
+
 class PoseEstimator {
 public:
     // PnP solver
-    void PnPSolver(MarkerInfo markers, vector<ModelInfo> reconstruct_model, CamInfo camera, Mat& rvec, Mat& tvec);
+    void PnPSolver(MarkerInfo markers, vector<ModelInfo> reconstruct_model, CamInfo camera, PoseInfo& pose);
 
     // Dense pose estimator
-    void DenseSolver(const Mat& img, vector<ModelInfo> reconstruct_model, Mat& rvec, Mat& tvec);
+    void DenseSolver(const Mat& img, vector<ModelInfo> reconstruct_model, PoseInfo& pose);
 
 private:
     int ID;

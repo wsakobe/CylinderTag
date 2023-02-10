@@ -27,10 +27,10 @@ public:
     void loadCamera(const string& path, CamInfo& camera);
 
     // Marker Localization
-    void estimatePose(const Mat& img, vector<MarkerInfo> cornerList, vector<ModelInfo> reconstruct_model, CamInfo camera, vector<Mat>& rvec, vector<Mat>& tvec, bool useDensePoseRefine = false);
+    void estimatePose(const Mat& img, vector<MarkerInfo> cornerList, vector<ModelInfo> reconstruct_model, CamInfo camera, vector<PoseInfo>& pose, bool useDensePoseRefine = false);
 
     // Draw axis on markers
-    void drawAxis(const Mat& img, vector<MarkerInfo> markers, vector<ModelInfo> reconstruct_model, vector<Mat>& rvec, vector<Mat>& tvec, CamInfo camera, int length);
+    void drawAxis(const Mat& img, vector<MarkerInfo> markers, vector<ModelInfo> reconstruct_model, vector<PoseInfo>& pose, CamInfo camera, int axisLength);
 
 private:
     corner_detector detector;
