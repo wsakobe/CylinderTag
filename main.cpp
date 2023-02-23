@@ -13,17 +13,22 @@ void read_from_image(const string& path, int num);
 void read_from_video(const string& path);
 void read_online();
 
+int cnt = 0;
+
 int main(int argc, char** argv){
 	google::InitGoogleLogging(argv[0]);
 	
-	//for (int i = 1; i <= 21; i++) {
+	//Reconstruction
+	//for (int i = 11; i <= 23; i++) {
 	//	string filepath = ".\\Data\\l\\";
 	//	filepath = filepath + to_string(i) + ".bmp";
 	//	read_from_image(filepath, i);
 	//}
-	//read_from_image(".\\Data\\l3.bmp", 1);
-	read_from_video(".\\Data\\v1.avi");
-		
+	
+	//read_from_image("F:/CylinderTag/Experiment/ArUco/aruco-markers-master/pose_estimation/src/test.bmp", 1);
+	read_from_video("F:/CylinderTag/Experiment/Pose_experiments/Viewing_angles/test_videos/testc.avi"); 
+	//read_online();
+
 	system("pause");
 	return 0;
 }
@@ -31,14 +36,27 @@ int main(int argc, char** argv){
 void read_from_image(const string& path, int num){
 	frame = imread(path);
 
-	CylinderTag marker("CTag_3f12c.marker");
-	marker.loadModel("CTag_3f12c.model", marker_model);
+	CylinderTag marker("CTag_2f12c.marker");
+	marker.loadModel("CTag_2f12c.model", marker_model);
 	marker.loadCamera("cameraParams.yml", camera);
 
-	cvtColor(frame, img_gray, COLOR_BGR2GRAY);
+	if (frame.channels() == 3) {
+		cvtColor(frame, img_gray, COLOR_BGR2GRAY);
+	}
+
 	marker.detect(img_gray, markers, 5, true, 5);
-	marker.estimatePose(img_gray, markers, marker_model, camera, pose, false);
-	marker.drawAxis(img_gray, markers, marker_model, pose, camera, 8);
+	for (int i = 0; i < markers.size(); i++)
+		cout << "ID " << i << ": " << markers[i].markerID + 1 << endl;
+	if (markers.size() == 0) {
+		cout << "No tag detected" << endl;
+		cnt++;
+	}
+	cout << cnt << endl;
+	//marker.estimatePose(img_gray, markers, marker_model, camera, pose, false);
+	//marker.drawAxis(img_gray, markers, marker_model, pose, camera, 8);
+	
+	waitKey(0);
+	destroyAllWindows();
 
 	//Output
 	//string fname = ".\\Recon\\l";
@@ -57,25 +75,71 @@ void read_from_video(const string& path){
 	VideoCapture capture; 
 	frame = capture.open(path);	
 
-	CylinderTag marker("CTag_3f12c.marker");
-	marker.loadModel("CTag_3f12c.model", marker_model);
+	CylinderTag marker("CTag_2f12c.marker");
+	marker.loadModel("CTag_2f12c.model", marker_model);
 	marker.loadCamera("cameraParams.yml", camera);
 
-	int cnt = 0;
+	int TP = 0, P_ALL = 0, FN = 0;
+	for (int i = 0; i < 0; i++)
+		capture.read(frame);
 	while (capture.read(frame))
-	{
-		for (int i = 0; i < 0; i++)
-			capture.read(frame);
-		cout << cnt++ << endl;
+	{		
 		cvtColor(frame, img_gray, COLOR_BGR2GRAY);
-		marker.detect(img_gray, markers, 5, false, 3);
-		for (int i = 0; i < markers.size(); i++)
+		markers.clear();
+		pose.clear();
+		marker.detect(img_gray, markers, 5, true, 5);
+		for (int i = 0; i < markers.size(); i++) {
 			cout << "ID " << i << ": " << markers[i].markerID + 1 << endl;
+			if (markers[i].markerID == 21) {
+				TP++;
+			}
+			else {
+				FN++;
+			}
+		}
+		cout << TP << "/" << ++P_ALL << endl;
+			
 		marker.estimatePose(img_gray, markers, marker_model, camera, pose, false);
-		marker.drawAxis(img_gray, markers, marker_model, pose, camera, 8);
+		if (!pose.empty()) {
+			marker.drawAxis(img_gray, markers, marker_model, pose, camera, 8);
+
+			cout << pose[0].rvec << endl << pose[0].tvec << endl << endl;
+				
+			//output
+			char fname[256];
+			sprintf(fname, "F:/CylinderTag/Experiment/Pose_experiments/Viewing_angles/Rot/CylinderTag/0.txt");
+			ofstream Files;
+			Files.open(fname, ios::app);
+			Files << format(pose[0].rvec, cv::Formatter::FMT_CSV) << endl;
+			Files.close();
+
+			sprintf(fname, "F:/CylinderTag/Experiment/Pose_experiments/Viewing_angles/Trans/CylinderTag/0.txt");
+			Files.open(fname, ios::app);
+			Files << format(pose[0].tvec, cv::Formatter::FMT_CSV) << endl;
+			Files.close();
+		}
 	}
+	std::cout << "Precision: " << (float)(TP * 1.0 / P_ALL) * 100 << "%" << std::endl;
+	std::cout << "Recall: " << (float)(1.0 * TP / (TP + FN)) * 100 << "%" << std::endl;
+	waitKey(0);
+	destroyAllWindows();
 }
 
 void read_online() {
-	// To be updated
+	VideoCapture cap(0);
+	//cap.set(CAP_PROP_FRAME_WIDTH, 1080);
+	//cap.set(CAP_PROP_FRAME_HEIGHT, 1920);
+
+	CylinderTag marker("CTag_2f12c.marker");
+	marker.loadModel("CTag_2f12c.model", marker_model);
+	marker.loadCamera("cameraParams.yml", camera);
+
+	while (waitKey(10) != 27) {
+		cap >> frame;
+		imshow("Input", frame);
+		waitKey(1);
+		cvtColor(frame, img_gray, COLOR_BGR2GRAY);
+		marker.detect(img_gray, markers, 5, true, 5);
+	}
+	destroyAllWindows();
 }

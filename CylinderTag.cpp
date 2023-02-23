@@ -70,10 +70,10 @@ void CylinderTag::detect(const Mat& img, vector<MarkerInfo>& markers_info, int a
     cvtColor(img, imgMark, COLOR_GRAY2RGB);
 
 	//time record
-	clock_t start[10];  
     double duration[10]; 
-	start[0] = clock();
-    
+	TickMeter meter;
+	meter.start();
+	    
 	//Refresh
 	quadAreas_labeled.clear();
 	corners.clear();
@@ -84,20 +84,10 @@ void CylinderTag::detect(const Mat& img, vector<MarkerInfo>& markers_info, int a
     resize(img, img_resize, Size(img.cols / 2, img.rows / 2), 0.5, 0.5, INTER_CUBIC);
     img_resize.convertTo(img_resize, CV_32FC1, 1.0 / 255);
 
-	start[1] = clock();
-	duration[0] = (double)(start[1] - start[0]) / CLOCKS_PER_SEC; 
-
     Mat img_binary(img_resize.rows, img_resize.cols, CV_8UC1);
     detector.adaptiveThreshold(img_resize, img_binary, adaptiveThresh);
-	//imshow("binary", img_binary);
-	//waitKey(0);
-	start[2] = clock();
-	duration[1] = (double)(start[2] - start[1]) / CLOCKS_PER_SEC; 
-
+	
 	detector.connectedComponentLabeling(img_binary, quadAreas_labeled);
-
-	start[3] = clock();
-	duration[2] = (double)(start[3] - start[2]) / CLOCKS_PER_SEC; 
 
     detector.edgeExtraction(img_resize, quadAreas_labeled, corners);
 	if (corners.empty()) {
@@ -105,11 +95,8 @@ void CylinderTag::detect(const Mat& img, vector<MarkerInfo>& markers_info, int a
 		return;
 	}
 
-	start[4] = clock();
-	duration[3] = (double)(start[4] - start[3]) / CLOCKS_PER_SEC; 
-
 	detector.featureRecovery(corners, features);
-	if (features.empty()) {
+	if (features.size() < this->featureSize) {
 		cout << "No feature detected!" << endl;
 		return;
 	}
@@ -120,20 +107,18 @@ void CylinderTag::detect(const Mat& img, vector<MarkerInfo>& markers_info, int a
 		img.convertTo(img_float, CV_32FC1, 1.0 / 255);
 		detector.edgeSubPix(img_float, features, features, cornerSubPixDist);
 	}
-		
-	start[5] = clock();
-	duration[4] = (double)(start[5] - start[4]) / CLOCKS_PER_SEC;
 	    	    
 	detector.markerOrganization(features, markers);
-
-	start[6] = clock();
-	duration[5] = (double)(start[6] - start[5]) / CLOCKS_PER_SEC;
 
 	detector.markerDecoder(markers, markers, this->state, this->featureSize);
 	markers_info = markers;
 
+	meter.stop();
+	duration[0] = meter.getTimeMilli();
+
 	//Plot
-	/*for (int i = 0; i < features.size(); i++){
+	/*
+	for (int i = 0; i < features.size(); i++){
 		line(imgMark, features[i].corners[0], features[i].corners[1], Scalar(0, 255, 255), 2.5);
 		line(imgMark, features[i].corners[1], features[i].corners[2], Scalar(0, 255, 255), 2.5);
 		line(imgMark, features[i].corners[2], features[i].corners[7], Scalar(0, 255, 255), 2.5);
@@ -143,11 +128,14 @@ void CylinderTag::detect(const Mat& img, vector<MarkerInfo>& markers_info, int a
 		line(imgMark, features[i].corners[6], features[i].corners[3], Scalar(0, 255, 255), 2.5);
 		line(imgMark, features[i].corners[3], features[i].corners[0], Scalar(0, 255, 255), 2.5);
 		for (int k = 0; k < 8; k++)
-			circle(imgMark, features[i].corners[k], 3, Scalar(75, 92, 196), -1);
+			circle(imgMark, features[i].corners[k], 1, Scalar(175, 92, 196), -1);
+		ostringstream oss;
+		oss << i;
+		putText(imgMark, oss.str(), features[i].feature_center, FONT_ITALIC, 0.6, Scalar(250, 250, 250), 2);
 	}
 	imshow("Feature Organization", imgMark);
-	waitKey(0);*/
-
+	waitKey(1);
+	*/
 	imgMark = img.clone();
 	cvtColor(img, imgMark, COLOR_GRAY2RGB);
 	for (int i = 0; i < markers.size(); i++) {
@@ -161,7 +149,7 @@ void CylinderTag::detect(const Mat& img, vector<MarkerInfo>& markers_info, int a
 			line(imgMark, markers[i].cornerLists[j][6], markers[i].cornerLists[j][3], Scalar(0, 255, 255), 2.5);
 			line(imgMark, markers[i].cornerLists[j][3], markers[i].cornerLists[j][0], Scalar(0, 255, 255), 2.5);
 			for (int k = 0; k < 8; k++)
-				circle(imgMark, markers[i].cornerLists[j][k], 1.5, Scalar(107, 90, 219));
+				circle(imgMark, markers[i].cornerLists[j][k], 3, Scalar(107, 90, 219), -1);
 			ostringstream oss;
 			oss << std::setprecision(4) << markers[i].feature_ID_left[j];
 			putText(imgMark, oss.str(), markers[i].cornerLists[j][0], FONT_ITALIC, 0.6, Scalar(250, 250, 250), 2);
@@ -176,11 +164,9 @@ void CylinderTag::detect(const Mat& img, vector<MarkerInfo>& markers_info, int a
 	imshow("Output", imgMark);
 	waitKey(1);
 	
-	start[7] = clock();
-	duration[6] = (double)(start[7] - start[6]) / CLOCKS_PER_SEC; 
-	cout << duration[0] * 1000 << " " << duration[1] * 1000 << " " << duration[2] * 1000 << " " << duration[3] * 1000 << " " << duration[4] * 1000 << " " << duration[5] * 1000 << " " << duration[6] * 1000 << endl;
-	double ttime = duration[0] + duration[1] + duration[2] + duration[3] + duration[4] + duration[5] + duration[6];
-	cout << "Total time: " << ttime * 1000 << endl;
+	//cout << duration[0] << " " << duration[1] << " " << duration[2] << " " << duration[3] << " " << duration[4] << " " << duration[5] << " " << duration[6] << " " << duration[7] << endl;
+	//double ttime = duration[0] + duration[1] + duration[2] + duration[3] + duration[4] + duration[5] + duration[6] + duration[7];
+	cout << "Total time: " << duration[0] << endl;
 }
 
 void CylinderTag::loadModel(const string& path, vector<ModelInfo>& reconstruct_model){
@@ -190,12 +176,13 @@ void CylinderTag::loadModel(const string& path, vector<ModelInfo>& reconstruct_m
 		throw __FUNCTION__ + string(", ") + "could not open the model file\n";
 	}
 
-	int model_num, model_size, corner_id;
+	int model_num, model_size, corner_id, model_ID;
 	input_file >> model_num >> model_size;
 	reconstruct_model.resize(model_num);
 	Point3f world_point;
 	for (int i = 0; i < model_num; i++) {
-		reconstruct_model[i].MarkerID = i;
+		input_file >> model_ID;
+		reconstruct_model[i].MarkerID = model_ID;
 		input_file >> reconstruct_model[i].base.x;
 		input_file >> reconstruct_model[i].base.y;
 		input_file >> reconstruct_model[i].base.z;

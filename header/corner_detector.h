@@ -94,7 +94,7 @@ private:
     vector<float> dist2center, dist2line;
     int init, cnt_boundary;
     float normal_line[2];
-    float d_line, dist_expand, threshold_line = 1.5, threshold_expand = 1, cost;
+    float d_line, dist_expand, threshold_line = 1.8, threshold_expand = 1.2, cost;
     Point2f area_center;
     vector<int> span, span_temp;
     vector<int> b;
@@ -147,6 +147,8 @@ private:
     int ID_left, ID_right;
     bool label_area, label_instruct;
     float ID_cr_correspond[4] = {1.47, 1.54, 1.61, 1.68};
+    float cr_covariance_left[4]  = { 0.1, 0.02, 0.035, 0.035 };
+    float cr_covariance_right[4] = { 0.05, 0.035, 0.035, 0.1 };
     bool tag_length;
 
     // Marker organization
@@ -161,7 +163,7 @@ private:
 
     // Marker decoder
     float marker_angle, edge_last, edge_now, dist_center;
-    int code[50], pos_now, max_coverage, second_coverage, coverage_now, direc;
+    int code[20], pos_now, max_coverage, second_coverage, coverage_now, direc, legal_marker_len;
     Point max_coverage_pos;
     pos_with_ID Pos_ID;
     pos_with_ID match_dictionary(int *code, Mat1i& state, int length, int legal_bits);

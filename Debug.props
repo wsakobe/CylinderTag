@@ -3,15 +3,15 @@
   <ImportGroup Label="PropertySheets" />
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup>
-    <IncludePath>D:\Ceres\Ceres\include;D:\eigen-3.4.0\eigen-3.4.0;D:\opencv\build\include;D:\opencv\build\include\opencv2;D:\Ceres\gflags\include;D:\Ceres\glog\include;$(IncludePath)</IncludePath>
-    <LibraryPath>D:\opencv\build\x64\vc15\lib;C:\Program Files %28x86%29\MVS\Development\Libraries\win64;D:\Ceres\Ceres\lib;D:\Ceres\glog\lib;D:\Ceres\gflags\lib;$(LibraryPath)</LibraryPath>
+    <IncludePath>D:\Ceres\Ceres\include;D:\eigen-3.4.0\eigen-3.4.0;D:\opencv\opencv\new_build\install\include;D:\opencv\opencv\new_build\install\include\opencv2;D:\Ceres\gflags\include;D:\Ceres\glog\include;$(IncludePath)</IncludePath>
+    <LibraryPath>D:\opencv\opencv\new_build\install\x64\vc16\lib;C:\Program Files %28x86%29\MVS\Development\Libraries\win64;D:\Ceres\Ceres\lib;D:\Ceres\glog\lib;D:\Ceres\gflags\lib;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <ItemDefinitionGroup>
     <ClCompile>
       <AdditionalIncludeDirectories>C:\Program Files %28x86%29\MVS\Development\Includes;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>opencv_world453d.lib;MvCameraControl.lib;ceres-debug.lib;gflags_debug.lib;glogd.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>opencv_videoio453d.lib;opencv_imgcodecs453d.lib;opencv_features2d453d.lib;opencv_calib3d453d.lib;opencv_imgproc453d.lib;opencv_aruco453d.lib;opencv_ccalib453d.lib;opencv_core453d.lib;opencv_highgui453d.lib;MvCameraControl.lib;ceres-debug.lib;gflags_debug.lib;glogd.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup />

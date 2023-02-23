@@ -3,12 +3,12 @@
   <ImportGroup Label="PropertySheets" />
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup>
-    <IncludePath>D:\opencv\build\include;D:\opencv\build\include\opencv2;D:\Ceres\gflags\include;D:\eigen-3.4.0\eigen-3.4.0;D:\Ceres\glog\include;D:\Ceres\Ceres\include;$(IncludePath)</IncludePath>
-    <LibraryPath>D:\opencv\build\x64\vc15\lib;D:\Ceres\glog\lib;D:\Ceres\gflags\lib;D:\Ceres\Ceres\lib;$(LibraryPath)</LibraryPath>
+    <IncludePath>D:\opencv\opencv\new_build\install\include;D:\opencv\opencv\new_build\install\include\opencv2;D:\Ceres\gflags\include;D:\eigen-3.4.0\eigen-3.4.0;D:\Ceres\glog\include;D:\Ceres\Ceres\include;$(IncludePath)</IncludePath>
+    <LibraryPath>D:\opencv\opencv\new_build\install\x64\vc16\lib;D:\Ceres\glog\lib;D:\Ceres\gflags\lib;D:\Ceres\Ceres\lib;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <ItemDefinitionGroup>
     <Link>
-      <AdditionalDependencies>opencv_world453.lib;MvCameraControl.lib;ceres.lib;gflags.lib;glog.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>opencv_imgproc453.lib;opencv_aruco453.lib;opencv_ccalib453.lib;opencv_core453.lib;opencv_highgui453.lib;MvCameraControl.lib;ceres.lib;gflags.lib;glog.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>C:\Program Files %28x86%29\MVS\Development\Libraries\win64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
     <ClCompile>
