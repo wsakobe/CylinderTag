@@ -53,21 +53,45 @@ void PoseEstimator::PnPSolver(MarkerInfo markers, vector<ModelInfo> reconstruct_
 	model_points.clear();
 
 	ID = markers.markerID;
+	isFoundModel = false;
 	for (int j = 0; j < reconstruct_model.size(); j++) {
 		if (reconstruct_model[j].MarkerID == ID) {
 			ID = j;
+			isFoundModel = true;
 			break;
 		}
 	}
+	if (!isFoundModel) {
+		pose.markerID = -1;
+		return;
+	}
 		
 	for (int j = 0; j < markers.cornerLists.size(); j++) {
-		for (int k = 0; k < 8; k++) {
+		if (markers.cornerLists.size() > 3) {
+			if (j == 0 && (abs(markers.feature_ID_left[j] - markers.feature_ID_right[j]) > 1 || markers.feature_ID_right[j] == -1)) continue;
+			if (j == markers.feature_ID_left.size() - 1 && (abs(markers.feature_ID_left[j] - markers.feature_ID_right[j]) > 1 || markers.feature_ID_right[j] == -1)) continue;
+		}
+		for (int k = 0; k < 2; k++) {
 			image_points.push_back(markers.cornerLists[j][k]);
 			model_points.push_back(reconstruct_model[ID].corners[markers.featurePos[j] * 8 + k]);
 		}
+		for (int k = 4; k < 6; k++) {
+			image_points.push_back(markers.cornerLists[j][k]);
+			model_points.push_back(reconstruct_model[ID].corners[markers.featurePos[j] * 8 + k]);
+		}
+		if (abs(markers.feature_ID_left[j] - markers.feature_ID_right[j]) < 3 && markers.feature_ID_right[j] != -1) {
+			for (int k = 2; k < 4; k++) {
+				image_points.push_back(markers.cornerLists[j][k]);
+				model_points.push_back(reconstruct_model[ID].corners[markers.featurePos[j] * 8 + k]);
+			}
+			for (int k = 6; k < 8; k++) {
+				image_points.push_back(markers.cornerLists[j][k]);
+				model_points.push_back(reconstruct_model[ID].corners[markers.featurePos[j] * 8 + k]);
+			}
+		}
 	}
-	solvePnPRansac(model_points, image_points, camera.Intrinsic, camera.distCoeffs, pose.rvec, pose.tvec, false, 100, 2, 0.99, noArray(), SOLVEPNP_EPNP);
-	PoseBA(image_points, model_points, pose, camera);
+	solvePnP(model_points, image_points, camera.Intrinsic, camera.distCoeffs, pose.rvec, pose.tvec, false, SOLVEPNP_EPNP);
+	//PoseBA(image_points, model_points, pose, camera);
 }
 
 void PoseEstimator::PoseBA(vector<Point2f> imagePoints, vector<Point3f> worldPoints, PoseInfo pose, CamInfo camera)

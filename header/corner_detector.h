@@ -53,6 +53,10 @@ public:
 
     void edgeSubPix(const Mat& src, vector<featureInfo>& features, vector<featureInfo>& features_refined, int subPixWindow);
 
+    void edgeRefine(const Mat& src, vector<featureInfo>& features, vector<featureInfo>& features_refined, int subPixWindow);
+
+    void featureCheck(vector<featureInfo>& features, vector<featureInfo>& features_checked);
+
     void buildProblem(Problem* problem, vector<Point> inlier_points, vector<float> inlier_pixels);
 
     featureInfo featureOrganization(vector<Point2f> quad1, vector<Point2f> quad2, Point2f quad1_center, Point2f quad2_center, float feature_angle);
@@ -94,7 +98,7 @@ private:
     vector<float> dist2center, dist2line;
     int init, cnt_boundary;
     float normal_line[2];
-    float d_line, dist_expand, threshold_line = 1.8, threshold_expand = 1.2, cost;
+    float d_line, dist_expand, threshold_line = 1.5, threshold_expand = 1.0, cost;
     Point2f area_center;
     vector<int> span, span_temp;
     vector<int> b;
@@ -103,7 +107,8 @@ private:
     bool find_edge_left, find_edge_right;
     int left, right;
     
-    array<vector<float>, 4> edge_angle_cluster, line_func;
+    array<vector<float>, 4> edge_angle_cluster;
+    array<vector<float>, 8> line_func;
     array<vector<Point>, 4> edge_point_cluster;
 
     vector<corners_pre> corners_p;    
@@ -120,7 +125,7 @@ private:
     vector<Point2f> contours;
     vector<Point> inlier_points;
     vector<float> inlier_pixels;
-    float width, pixel_high_low[2], mean_pixel[2], dist, ratio, point_dist;
+    float width, pixel_high_low[2], mean_pixel[2], dist, ratio_start, ratio_end, point_dist;
     double line_function[3]; 
     int count[2], direction;
 
@@ -147,15 +152,15 @@ private:
     int ID_left, ID_right;
     bool label_area, label_instruct;
     float ID_cr_correspond[4] = {1.47, 1.54, 1.61, 1.68};
-    float cr_covariance_left[4]  = { 0.1, 0.02, 0.035, 0.035 };
-    float cr_covariance_right[4] = { 0.05, 0.035, 0.035, 0.1 };
+    float cr_covariance_left[4]  = { 0.1, 0.035, 0.035, 0.035 };
+    float cr_covariance_right[4] = { 0.035, 0.035, 0.035, 0.1 };
     bool tag_length;
 
     // Marker organization
     int union_find(int input);
     float area(featureInfo feature);
     int father[100];
-    float area_ratio = 0.6, threshold_vertical = 0.5, center_angle, dist_fea;
+    float area_ratio = 0.7, threshold_vertical = 0.5, center_angle, dist_fea;
     Point2f vector_center, vector_longedge;
     int pose[4] = {0, 1, 4, 5}, cnt, gap;
     vector<int> father_database;

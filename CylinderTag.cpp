@@ -105,9 +105,9 @@ void CylinderTag::detect(const Mat& img, vector<MarkerInfo>& markers_info, int a
 
 	if (cornerSubPix) {
 		img.convertTo(img_float, CV_32FC1, 1.0 / 255);
-		detector.edgeSubPix(img_float, features, features, cornerSubPixDist);
+		detector.edgeRefine(img_float, features, features, cornerSubPixDist);
 	}
-	    	    
+		
 	detector.markerOrganization(features, markers);
 
 	detector.markerDecoder(markers, markers, this->state, this->featureSize);
@@ -117,7 +117,7 @@ void CylinderTag::detect(const Mat& img, vector<MarkerInfo>& markers_info, int a
 	duration[0] = meter.getTimeMilli();
 
 	//Plot
-	/*
+	/* 
 	for (int i = 0; i < features.size(); i++){
 		line(imgMark, features[i].corners[0], features[i].corners[1], Scalar(0, 255, 255), 2.5);
 		line(imgMark, features[i].corners[1], features[i].corners[2], Scalar(0, 255, 255), 2.5);
@@ -212,7 +212,11 @@ void CylinderTag::estimatePose(const Mat& img, vector<MarkerInfo> markers, vecto
 		estimator.PnPSolver(markers[i], reconstruct_model, camera, pose[i]);
 		if (useDensePoseRefine)
 			estimator.DenseSolver(img, reconstruct_model, pose[i]);
-	}	
+	}
+
+	pose.erase(std::remove_if(pose.begin(), pose.end(), [](PoseInfo const& pose) {
+		return pose.markerID == -1;
+	}), pose.end());
 }
 
 void CylinderTag::drawAxis(const Mat& img, vector<MarkerInfo> markers, vector<ModelInfo> reconstruct_model, vector<PoseInfo>& pose, CamInfo camera, int axisLength = 5){

@@ -116,7 +116,7 @@ void corner_detector::connectedComponentLabeling(const Mat& src, vector<vector<P
             iter++;
         }
     }
-    ////去除过小区域，初始化颜色表
+    //去除过小区域，初始化颜色表
     //vector<cv::Vec3b> colors(nccomp_area);
     //colors[0] = cv::Vec3b(0,0,0); // background pixels remain black.
     //for(int i = 1; i < nccomp_area; i++ ) {
@@ -207,8 +207,8 @@ vector<int> corner_detector::expand_line(vector<Point> edge_point, int init, int
 
 void corner_detector::edgeExtraction(const Mat& img, vector<vector<Point>>& quadArea, vector<vector<Point2f>>& corners_init){
     // Display
-    //Mat imgMark(img.rows, img.cols, CV_32FC3);
-    //cvtColor(img, imgMark, COLOR_GRAY2RGB);
+    Mat imgMark(img.rows, img.cols, CV_32FC3);
+    cvtColor(img, imgMark, COLOR_GRAY2RGB);
 
     clock_t start,finish;  
     double duration; 
@@ -402,7 +402,7 @@ void corner_detector::edgeExtraction(const Mat& img, vector<vector<Point>>& quad
             }
             fitLine(edge_point_cluster[j], line_func[j], DIST_WELSCH, 0, 0.01, 0.01);
         }
-        /*
+        
         for (int k = 0; k < edge_point_cluster[0].size(); k++){
             circle(imgMark, edge_point_cluster[0][k], 0.5, Scalar(0, 250, 0), -1);
         }
@@ -415,7 +415,7 @@ void corner_detector::edgeExtraction(const Mat& img, vector<vector<Point>>& quad
         for (int k = 0; k < edge_point_cluster[3].size(); k++){
             circle(imgMark, edge_point_cluster[3][k], 0.5, Scalar(0, 120, 100), -1);
         }
-        */
+        
         if (flag_line_number) continue;
         for (int j = 0; j < 3; j++){
             for (int k = j + 1; k < 4; k++){
@@ -459,15 +459,14 @@ void corner_detector::edgeExtraction(const Mat& img, vector<vector<Point>>& quad
         }
         
         corners_init.push_back(corners_pass);
-
-        /*
+        
+        
         ostringstream oss;
         oss << corners_init.size() - 1;
         putText(imgMark, oss.str(), corners_pass[0], FONT_ITALIC, 0.6, Scalar(20, 200, 255), 1);
         for (int j = 0; j < corners_pass.size(); j++){
             circle(imgMark, corners_pass[j], 2, Scalar(120, 150, 0), -1);
         }
-        */
     }     
     //imshow("corners initial", imgMark);
     //waitKey(0);
@@ -610,8 +609,8 @@ void corner_detector::featureRecovery(vector<vector<Point2f>>& corners_refined, 
                 }
                 feature_length = distance_2points(corner_centers[i], corner_centers[j]);
                 if ((tag1 && tag2) && (dist1_long > dist1_short || dist2_long > dist2_short)
-                    && (abs(edge_angle1 - edge_angle2) < threshold_angle * 8 || abs(abs(edge_angle1 - edge_angle2) - 180) < threshold_angle * 8 || abs(abs(edge_angle1 - edge_angle2) - 360) < threshold_angle * 8)
-                    && (abs(dist1_short - dist2_short) < min(dist1_short, dist2_short) * 0.3)
+                    && (abs(edge_angle1 - edge_angle2) < threshold_angle * 10 || abs(abs(edge_angle1 - edge_angle2) - 180) < threshold_angle * 10 || abs(abs(edge_angle1 - edge_angle2) - 360) < threshold_angle * 10)
+                    && (abs(dist1_short - dist2_short) < min(dist1_short, dist2_short) * 0.33)
                     && ((dist1_long + dist2_long) > (dist1_short + dist2_short))
                     && ((dist1_long + dist2_long) < 15 * (dist1_short + dist2_short))
                     && (feature_length - (dist1_long + dist2_long) / 2 < 0.3 * (feature_length + (dist1_long + dist2_long) / 2)))
@@ -628,16 +627,17 @@ void corner_detector::featureRecovery(vector<vector<Point2f>>& corners_refined, 
 }
 
 void corner_detector::cornerObtain(const Mat& src, vector<featureInfo>& features){
-    TermCriteria termcrit(TermCriteria::COUNT | TermCriteria::EPS, 50, 0.01);
+    TermCriteria termcrit(TermCriteria::COUNT + TermCriteria::EPS, 20, 0.1);
     for (int i = 0; i < features.size(); i++) {
         for (int j = 0; j < features[i].corners.size(); j++) {
-            features[i].corners[j] *= 2;
+            features[i].corners[j] = (features[i].corners[j] - Point2f(0.5, 0.5)) * 2 + Point2f(0.5, 0.5);
         }
+        features[i].feature_center = (features[i].corners[0] + features[i].corners[1] + features[i].corners[4] + features[i].corners[5]) / 4;
     }
 
     for (int i = 0; i < features.size(); i++) {
-        cornerSubPix(src, features[i].corners, Size(3, 3), Size(-1, -1), termcrit);
-        features[i].feature_center = (features[i].corners[0] + features[i].corners[1] + features[i].corners[4] + features[i].corners[5]) / 4;
+        //cornerSubPix(src, features[i].corners, Size(3, 3), Size(-1, -1), termcrit);
+        
     }
 }
 
@@ -703,8 +703,8 @@ struct EdgePixelError
 
 void corner_detector::edgeSubPix(const Mat& src, vector<featureInfo>& features, vector<featureInfo>& features_refined, int subPixWindow) {
     // Display
-    //Mat imgMark(src.rows, src.cols, CV_32FC3);
-    //cvtColor(src, imgMark, COLOR_GRAY2RGB);
+    Mat imgMark(src.rows, src.cols, CV_32FC3);
+    cvtColor(src, imgMark, COLOR_GRAY2RGB);
         
     features_refined = features;
     
@@ -720,7 +720,8 @@ void corner_detector::edgeSubPix(const Mat& src, vector<featureInfo>& features, 
     options.parameter_tolerance = 1e-4;
     Solver::Summary summary;
     
-    for (int i = 0; i < features_refined.size(); i++) {     
+    for (int i = 0; i < features_refined.size(); i++) {  
+        // lines close to the next corner 
         for (int j = 0; j < 4; j++) {
             //normalized line function obtained
             line_function[0] = -(features_refined[i].corners[j].y - features_refined[i].corners[(j + 1) % 4].y) / sqrt((features_refined[i].corners[j].x - features_refined[i].corners[(j + 1) % 4].x) * (features_refined[i].corners[j].x - features_refined[i].corners[(j + 1) % 4].x) + (features_refined[i].corners[j].y - features_refined[i].corners[(j + 1) % 4].y) * (features_refined[i].corners[j].y - features_refined[i].corners[(j + 1) % 4].y));
@@ -736,13 +737,14 @@ void corner_detector::edgeSubPix(const Mat& src, vector<featureInfo>& features, 
             inlier_points.clear();
 
             point_dist = distance_2points(features_refined[i].corners[j], features_refined[i].corners[(j + 1) % 4]);
-            ratio = point_dist < 10 ? 0.9 : max(0.6, 0.9 - point_dist / 150 * 0.3);
-            Point2f corner_start = features_refined[i].corners[j] * ratio + features_refined[i].corners[(j + 1) % 4] * (1 - ratio);
-            Point2f corner_end = features_refined[i].corners[j] * (1 - ratio) + features_refined[i].corners[(j + 1) % 4] * ratio;
+            ratio_start = point_dist < 30 ? 0.1 : 0.95 - 25 / point_dist;
+            ratio_end = point_dist < 30 ? 0.9 : 1 - 3 / point_dist;
+            Point2f corner_start = features_refined[i].corners[j] * (1 - ratio_start) + features_refined[i].corners[(j + 1) % 4] * ratio_start;
+            Point2f corner_end = features_refined[i].corners[j] * (1 - ratio_end) + features_refined[i].corners[(j + 1) % 4] * ratio_end;
 
             float k_line = (features_refined[i].corners[j].y - features_refined[i].corners[(j + 1) % 4].y) / (features_refined[i].corners[j].x - features_refined[i].corners[(j + 1) % 4].x);
-            if (abs(k_line) > 100) k_line = 100; // avoid vertical lines
-            if (abs(k_line - 0) < 1e-4) k_line = 1e-2; // avoid horizon lines
+            if (abs(k_line) > 1000) k_line = 1000; // avoid vertical lines
+            if (abs(k_line - 0) < 1e-7) k_line = 1e-5; // avoid horizon lines
 
             float b_line = features_refined[i].corners[j].y - k_line * features_refined[i].corners[j].x;
             Point2f normal_line = Point2f(k_line, -1);
@@ -750,8 +752,9 @@ void corner_detector::edgeSubPix(const Mat& src, vector<featureInfo>& features, 
             float b_line_down = b_line + subPixWindow * norm(normal_line);
 
             Point2f normal_orthline = Point2f(1 / k_line, 1);
+            Point2f normal_paral = Point2f((features_refined[i].corners[(j + 1) % 4].y - features_refined[i].corners[(j + 2) % 4].y) / (features_refined[i].corners[(j + 1) % 4].x - features_refined[i].corners[(j + 2) % 4].x), -1);
             float b_orthline_upon = -corner_start.y - normal_orthline.x * corner_start.x;
-            float b_orthline_down = -corner_end.y - normal_orthline.x * corner_end.x;
+            float b_orthline_down = corner_end.y - normal_paral.x * corner_end.x;
 
             //AX = B
             A.at<float>(0, 0) = normal_line.x;
@@ -783,6 +786,12 @@ void corner_detector::edgeSubPix(const Mat& src, vector<featureInfo>& features, 
                 if (sol.at<float>(1, 0) < y_min) y_min = sol.at<float>(1, 0);
             }
 
+            //AX = B
+            A.at<float>(0, 0) = normal_line.x;
+            A.at<float>(0, 1) = normal_line.y;
+            A.at<float>(1, 0) = normal_paral.x;
+            A.at<float>(1, 1) = normal_paral.y;
+
             //Right-down intersection
             B.at<float>(0, 0) = -b_line_down;
             B.at<float>(1, 0) = -b_orthline_down;
@@ -798,6 +807,154 @@ void corner_detector::edgeSubPix(const Mat& src, vector<featureInfo>& features, 
             //Right-up intersection
             B.at<float>(0, 0) = -b_line_upon;
             B.at<float>(1, 0) = -b_orthline_down;
+            if (determinant(A) != 0) {
+                solve(A, B, sol);
+                contours.push_back(Point2f(sol.at<float>(0, 0), sol.at<float>(1, 0)));
+                if (sol.at<float>(0, 0) > x_max) x_max = sol.at<float>(0, 0);
+                if (sol.at<float>(1, 0) > y_max) y_max = sol.at<float>(1, 0);
+                if (sol.at<float>(0, 0) < x_min) x_min = sol.at<float>(0, 0);
+                if (sol.at<float>(1, 0) < y_min) y_min = sol.at<float>(1, 0);
+            }
+
+            //Direction judgment
+            count[0] = 0;
+            count[1] = 0;
+            mean_pixel[0] = 0;
+            mean_pixel[1] = 0;
+
+            for (int iter_x = max(0, (int)x_min); iter_x < min(src.cols, round(x_max)); iter_x++)
+                for (int iter_y = max(0, (int)y_min); iter_y < min(src.rows, round(y_max)); iter_y++) {
+                    if (pointPolygonTest(contours, Point(iter_x, iter_y), false) > 0) {
+                        inlier_points.push_back(Point(iter_x, iter_y));
+                        inlier_pixels.push_back(src.at<float>(iter_y, iter_x));
+                        circle(imgMark, Point(iter_x, iter_y), 1, Scalar(0, 255, 0));
+                        dist = line_function[0] * iter_x + line_function[1] * iter_y + line_function[2];
+                        if (dist > subPixWindow * 0.5) {
+                            count[1]++;
+                            mean_pixel[1] += src.at<float>(iter_y, iter_x);
+                        }
+                        else if (dist < -subPixWindow * 0.5) {
+                            count[0]++;
+                            mean_pixel[0] += src.at<float>(iter_y, iter_x);
+                        }
+                    }
+                }
+
+            if (mean_pixel[0] / count[0] > mean_pixel[1] / count[1]) {
+                pixel_high_low[0] = mean_pixel[0] / count[0];
+                pixel_high_low[1] = mean_pixel[1] / count[1];
+                direction = -1;
+            }
+            else {
+                pixel_high_low[1] = mean_pixel[0] / count[0];
+                pixel_high_low[0] = mean_pixel[1] / count[1];
+                direction = 1;
+            }
+            Point2f start_before_ceres = Point2f(features_refined[i].corners[j].x, (-features_refined[i].corners[j].x * line_function[0] - line_function[2]) / line_function[1]);
+            Point2f end_before_ceres = Point2f(features_refined[i].corners[(j + 1) % 4].x, (-features_refined[i].corners[(j + 1) % 4].x * line_function[0] - line_function[2]) / line_function[1]);
+            line(imgMark, start_before_ceres, end_before_ceres, Scalar(120, 120, 0), 1);
+
+            Problem problem;
+            buildProblem(&problem, inlier_points, inlier_pixels);
+            Solve(options, &problem, &summary);
+            //cout << summary.BriefReport() << endl;
+            Point2f start_after_ceres = Point2f(features_refined[i].corners[j].x - 10, (-(features_refined[i].corners[j].x - 10) * line_function[0] - line_function[2]) / line_function[1]);
+            Point2f end_after_ceres = Point2f(features_refined[i].corners[(j + 1) % 4].x, (-features_refined[i].corners[(j + 1) % 4].x * line_function[0] - line_function[2]) / line_function[1]);
+            line(imgMark, start_after_ceres, end_after_ceres, Scalar(0, 255, 0), 1);
+            //imshow("edge subpixel", imgMark);
+            //waitKey(0);
+            line_func[j].clear();
+            line_func[j].push_back(line_function[0]);
+            line_func[j].push_back(line_function[1]);
+            line_func[j].push_back(line_function[2]);
+        }
+
+        // lines close to corner now
+        for (int j = 0; j < 4; j++) {
+            //normalized line function obtained
+            line_function[0] = -(features_refined[i].corners[j].y - features_refined[i].corners[(j + 1) % 4].y) / sqrt((features_refined[i].corners[j].x - features_refined[i].corners[(j + 1) % 4].x) * (features_refined[i].corners[j].x - features_refined[i].corners[(j + 1) % 4].x) + (features_refined[i].corners[j].y - features_refined[i].corners[(j + 1) % 4].y) * (features_refined[i].corners[j].y - features_refined[i].corners[(j + 1) % 4].y));
+            line_function[1] = (features_refined[i].corners[j].x - features_refined[i].corners[(j + 1) % 4].x) / sqrt((features_refined[i].corners[j].x - features_refined[i].corners[(j + 1) % 4].x) * (features_refined[i].corners[j].x - features_refined[i].corners[(j + 1) % 4].x) + (features_refined[i].corners[j].y - features_refined[i].corners[(j + 1) % 4].y) * (features_refined[i].corners[j].y - features_refined[i].corners[(j + 1) % 4].y));;
+            line_function[2] = -line_function[0] * features_refined[i].corners[j].x - line_function[1] * features_refined[i].corners[j].y;
+
+            x_min = src.cols;
+            x_max = 0;
+            y_min = src.rows;
+            y_max = 0;
+            contours.clear();
+            inlier_pixels.clear();
+            inlier_points.clear();
+
+            point_dist = distance_2points(features_refined[i].corners[j], features_refined[i].corners[(j + 1) % 4]);
+            ratio_start = point_dist < 30 ? 0.1 : 3 / point_dist;
+            ratio_end = point_dist < 30 ? 0.9 : 0.4 + 15 / point_dist;
+            Point2f corner_start = features_refined[i].corners[j] * (1 - ratio_start) + features_refined[i].corners[(j + 1) % 4] * ratio_start;
+            Point2f corner_end = features_refined[i].corners[j] * (1 - ratio_end) + features_refined[i].corners[(j + 1) % 4] * ratio_end;
+
+            float k_line = (features_refined[i].corners[j].y - features_refined[i].corners[(j + 1) % 4].y) / (features_refined[i].corners[j].x - features_refined[i].corners[(j + 1) % 4].x);
+            if (abs(k_line) > 1000) k_line = 1000; // avoid vertical lines
+            if (abs(k_line - 0) < 1e-7) k_line = 1e-5; // avoid horizon lines
+
+            float b_line = features_refined[i].corners[j].y - k_line * features_refined[i].corners[j].x;
+            Point2f normal_line = Point2f(k_line, -1);
+            float b_line_upon = b_line - subPixWindow * norm(normal_line);
+            float b_line_down = b_line + subPixWindow * norm(normal_line);
+
+            Point2f normal_orthline = Point2f(1 / k_line, 1);
+            Point2f normal_paral = Point2f((features_refined[i].corners[j].y - features_refined[i].corners[(j + 3) % 4].y) / (features_refined[i].corners[j].x - features_refined[i].corners[(j + 3) % 4].x), -1);
+            float b_orthline_upon = -corner_end.y - normal_orthline.x * corner_end.x;
+            float b_orthline_down = corner_start.y - normal_paral.x * corner_start.x;
+
+            //AX = B
+            A.at<float>(0, 0) = normal_line.x;
+            A.at<float>(0, 1) = normal_line.y;
+            A.at<float>(1, 0) = normal_paral.x;
+            A.at<float>(1, 1) = normal_paral.y;
+         
+            //Left-up intersection
+            B.at<float>(0, 0) = -b_line_upon;
+            B.at<float>(1, 0) = -b_orthline_down;
+            if (determinant(A) != 0) {
+                solve(A, B, sol);
+                contours.push_back(Point2f(sol.at<float>(0, 0), sol.at<float>(1, 0)));
+                if (sol.at<float>(0, 0) > x_max) x_max = sol.at<float>(0, 0);
+                if (sol.at<float>(1, 0) > y_max) y_max = sol.at<float>(1, 0);
+                if (sol.at<float>(0, 0) < x_min) x_min = sol.at<float>(0, 0);
+                if (sol.at<float>(1, 0) < y_min) y_min = sol.at<float>(1, 0);
+            }
+
+            //Left-down intersection
+            B.at<float>(0, 0) = -b_line_down;
+            B.at<float>(1, 0) = -b_orthline_down;
+            if (determinant(A) != 0) {
+                solve(A, B, sol);
+                contours.push_back(Point2f(sol.at<float>(0, 0), sol.at<float>(1, 0)));
+                if (sol.at<float>(0, 0) > x_max) x_max = sol.at<float>(0, 0);
+                if (sol.at<float>(1, 0) > y_max) y_max = sol.at<float>(1, 0);
+                if (sol.at<float>(0, 0) < x_min) x_min = sol.at<float>(0, 0);
+                if (sol.at<float>(1, 0) < y_min) y_min = sol.at<float>(1, 0);
+            }
+
+            //AX = B
+            A.at<float>(0, 0) = normal_line.x;
+            A.at<float>(0, 1) = normal_line.y;
+            A.at<float>(1, 0) = normal_orthline.x;
+            A.at<float>(1, 1) = normal_orthline.y;
+
+            //Right-down intersection
+            B.at<float>(0, 0) = -b_line_down;
+            B.at<float>(1, 0) = -b_orthline_upon;
+            if (determinant(A) != 0) {
+                solve(A, B, sol);
+                contours.push_back(Point2f(sol.at<float>(0, 0), sol.at<float>(1, 0)));
+                if (sol.at<float>(0, 0) > x_max) x_max = sol.at<float>(0, 0);
+                if (sol.at<float>(1, 0) > y_max) y_max = sol.at<float>(1, 0);
+                if (sol.at<float>(0, 0) < x_min) x_min = sol.at<float>(0, 0);
+                if (sol.at<float>(1, 0) < y_min) y_min = sol.at<float>(1, 0);
+            }
+
+            //Right-up intersection
+            B.at<float>(0, 0) = -b_line_upon;
+            B.at<float>(1, 0) = -b_orthline_upon;
             if (determinant(A) != 0) {
                 solve(A, B, sol);
                 contours.push_back(Point2f(sol.at<float>(0, 0), sol.at<float>(1, 0)));
@@ -854,18 +1011,18 @@ void corner_detector::edgeSubPix(const Mat& src, vector<featureInfo>& features, 
             //line(imgMark, start_after_ceres, end_after_ceres, Scalar(0, 255, 0), 1);
             //imshow("edge subpixel", imgMark);
             //waitKey(0);
-            line_func[j].clear();
-            line_func[j].push_back(line_function[0]);
-            line_func[j].push_back(line_function[1]);
-            line_func[j].push_back(line_function[2]);
+            line_func[j + 4].clear();
+            line_func[j + 4].push_back(line_function[0]);
+            line_func[j + 4].push_back(line_function[1]);
+            line_func[j + 4].push_back(line_function[2]);
         }
         
         for (int j = 0; j < 4; j++) {
-            A.at<float>(0, 0) = line_func[j][0];
-            A.at<float>(0, 1) = line_func[j][1];
+            A.at<float>(0, 0) = line_func[j + 4][0];
+            A.at<float>(0, 1) = line_func[j + 4][1];
             A.at<float>(1, 0) = line_func[(j + 3) % 4][0];
             A.at<float>(1, 1) = line_func[(j + 3) % 4][1];
-            B.at<float>(0, 0) = -line_func[j][2];
+            B.at<float>(0, 0) = -line_func[j + 4][2];
             B.at<float>(1, 0) = -line_func[(j + 3) % 4][2];
             if (determinant(A) != 0) {
                 solve(A, B, sol);
@@ -874,6 +1031,7 @@ void corner_detector::edgeSubPix(const Mat& src, vector<featureInfo>& features, 
             }
         }
 
+        // lines close to the next corner 
         for (int j = 0; j < 4; j++) {
             //normalized line function obtained
             line_function[0] = -(features_refined[i].corners[j + 4].y - features_refined[i].corners[(j + 1) % 4 + 4].y) / sqrt((features_refined[i].corners[j + 4].x - features_refined[i].corners[(j + 1) % 4 + 4].x) * (features_refined[i].corners[j + 4].x - features_refined[i].corners[(j + 1) % 4 + 4].x) + (features_refined[i].corners[j + 4].y - features_refined[i].corners[(j + 1) % 4 + 4].y) * (features_refined[i].corners[j + 4].y - features_refined[i].corners[(j + 1) % 4 + 4].y));
@@ -889,13 +1047,14 @@ void corner_detector::edgeSubPix(const Mat& src, vector<featureInfo>& features, 
             inlier_points.clear();
 
             point_dist = distance_2points(features_refined[i].corners[j + 4], features_refined[i].corners[(j + 1) % 4 + 4]);
-            ratio = point_dist < 10 ? 0.9 : max(0.6, 0.9 - point_dist / 80 * 0.3);
-            Point2f corner_start = features_refined[i].corners[j + 4] * ratio + features_refined[i].corners[(j + 1) % 4 + 4] * (1 - ratio);
-            Point2f corner_end = features_refined[i].corners[j + 4] * (1 - ratio) + features_refined[i].corners[(j + 1) % 4 + 4] * ratio;
-
+            ratio_start = point_dist < 30 ? 0.1 : 0.6 - 15 / point_dist;
+            ratio_end = point_dist < 30 ? 0.9 : 1 - 3 / point_dist;
+            Point2f corner_start = features_refined[i].corners[j + 4] * (1 - ratio_start) + features_refined[i].corners[(j + 1) % 4 + 4] * ratio_start;
+            Point2f corner_end = features_refined[i].corners[j + 4] * (1 - ratio_end) + features_refined[i].corners[(j + 1) % 4 + 4] * ratio_end;
+ 
             float k_line = (features_refined[i].corners[j + 4].y - features_refined[i].corners[(j + 1) % 4 + 4].y) / (features_refined[i].corners[j + 4].x - features_refined[i].corners[(j + 1) % 4 + 4].x);
-            if (abs(k_line) > 100) k_line = 100; // avoid vertical lines
-            if (abs(k_line - 0) < 1e-4) k_line = 1e-2; // avoid horizon lines
+            if (abs(k_line) > 1000) k_line = 1000; // avoid vertical lines
+            if (abs(k_line - 0) < 1e-7) k_line = 1e-5; // avoid horizon lines
 
             float b_line = features_refined[i].corners[j + 4].y - k_line * features_refined[i].corners[j + 4].x;
             Point2f normal_line = Point2f(k_line, -1);
@@ -903,8 +1062,9 @@ void corner_detector::edgeSubPix(const Mat& src, vector<featureInfo>& features, 
             float b_line_down = b_line + subPixWindow * norm(normal_line);
 
             Point2f normal_orthline = Point2f(1 / k_line, 1);
+            Point2f normal_paral = Point2f((features_refined[i].corners[(j + 1) % 4 + 4].y - features_refined[i].corners[(j + 2) % 4 + 4].y) / (features_refined[i].corners[(j + 1) % 4 + 4].x - features_refined[i].corners[(j + 2) % 4 + 4].x), -1);
             float b_orthline_upon = -corner_start.y - normal_orthline.x * corner_start.x;
-            float b_orthline_down = -corner_end.y - normal_orthline.x * corner_end.x;
+            float b_orthline_down = corner_end.y - normal_paral.x * corner_end.x;
 
             // AX = B
             A.at<float>(0, 0) = normal_line.x;
@@ -936,6 +1096,12 @@ void corner_detector::edgeSubPix(const Mat& src, vector<featureInfo>& features, 
                 if (sol.at<float>(1, 0) < y_min) y_min = sol.at<float>(1, 0);
             }
 
+            // AX = B
+            A.at<float>(0, 0) = normal_line.x;
+            A.at<float>(0, 1) = normal_line.y;
+            A.at<float>(1, 0) = normal_paral.x;
+            A.at<float>(1, 1) = normal_paral.y;
+
             //Right-down intersection
             B.at<float>(0, 0) = -b_line_down;
             B.at<float>(1, 0) = -b_orthline_down;
@@ -951,6 +1117,156 @@ void corner_detector::edgeSubPix(const Mat& src, vector<featureInfo>& features, 
             //Right-up intersection
             B.at<float>(0, 0) = -b_line_upon;
             B.at<float>(1, 0) = -b_orthline_down;
+            if (determinant(A) != 0) {
+                solve(A, B, sol);
+                contours.push_back(Point2f(sol.at<float>(0, 0), sol.at<float>(1, 0)));
+                if (sol.at<float>(0, 0) > x_max) x_max = sol.at<float>(0, 0);
+                if (sol.at<float>(1, 0) > y_max) y_max = sol.at<float>(1, 0);
+                if (sol.at<float>(0, 0) < x_min) x_min = sol.at<float>(0, 0);
+                if (sol.at<float>(1, 0) < y_min) y_min = sol.at<float>(1, 0);
+            }
+
+            //direction judgment
+            count[0] = 0;
+            count[1] = 0;
+            mean_pixel[0] = 0;
+            mean_pixel[1] = 0;
+
+            for (int iter_x = max(0, (int)x_min); iter_x < min(src.cols, round(x_max)); iter_x++)
+                for (int iter_y = max(0, (int)y_min); iter_y < min(src.rows, round(y_max)); iter_y++) {
+                    if (pointPolygonTest(contours, Point(iter_x, iter_y), false) > 0) {
+                        inlier_points.push_back(Point(iter_x, iter_y));
+                        inlier_pixels.push_back(src.at<float>(iter_y, iter_x));
+                        circle(imgMark, Point(iter_x, iter_y), 1, Scalar(0, 255, 0));
+                        dist = line_function[0] * iter_x + line_function[1] * iter_y + line_function[2];
+                        if (dist > subPixWindow * 0.5) {
+                            count[1]++;
+                            mean_pixel[1] += src.at<float>(iter_y, iter_x);
+                        }
+                        else if (dist < -subPixWindow * 0.5) {
+                            count[0]++;
+                            mean_pixel[0] += src.at<float>(iter_y, iter_x);
+                        }
+                    }
+                }
+
+            if (mean_pixel[0] / count[0] > mean_pixel[1] / count[1]) {
+                pixel_high_low[0] = mean_pixel[0] / count[0];
+                pixel_high_low[1] = mean_pixel[1] / count[1];
+                direction = -1;
+            }
+            else {
+                pixel_high_low[1] = mean_pixel[0] / count[0];
+                pixel_high_low[0] = mean_pixel[1] / count[1];
+                direction = 1;
+            }
+            Point2f start_before_ceres = Point2f(features_refined[i].corners[j + 4].x, (-features_refined[i].corners[j + 4].x * line_function[0] - line_function[2]) / line_function[1]);
+            Point2f end_before_ceres = Point2f(features_refined[i].corners[(j + 1) % 4 + 4].x, (-features_refined[i].corners[(j + 1) % 4 + 4].x * line_function[0] - line_function[2]) / line_function[1]);
+            line(imgMark, start_before_ceres, end_before_ceres, Scalar(120, 120, 0), 1);
+
+            Problem problem;
+            buildProblem(&problem, inlier_points, inlier_pixels);
+            Solve(options, &problem, &summary);
+            //cout << summary.BriefReport() << endl;
+            
+            Point2f start_after_ceres = Point2f(features_refined[i].corners[j + 4].x, (-features_refined[i].corners[j + 4].x * line_function[0] - line_function[2]) / line_function[1]);
+            Point2f end_after_ceres = Point2f(features_refined[i].corners[(j + 1) % 4 + 4].x, (-features_refined[i].corners[(j + 1) % 4 + 4].x * line_function[0] - line_function[2]) / line_function[1]);
+            line(imgMark, start_after_ceres, end_after_ceres, Scalar(0, 255, 0), 1);
+            //imshow("edge subpixel", imgMark);
+            //waitKey(0);
+            
+            line_func[j].clear();
+            line_func[j].push_back(line_function[0]);
+            line_func[j].push_back(line_function[1]);
+            line_func[j].push_back(line_function[2]);
+        }
+
+        // lines close to corner now 
+        for (int j = 0; j < 4; j++) {
+            //normalized line function obtained
+            line_function[0] = -(features_refined[i].corners[j + 4].y - features_refined[i].corners[(j + 1) % 4 + 4].y) / sqrt((features_refined[i].corners[j + 4].x - features_refined[i].corners[(j + 1) % 4 + 4].x) * (features_refined[i].corners[j + 4].x - features_refined[i].corners[(j + 1) % 4 + 4].x) + (features_refined[i].corners[j + 4].y - features_refined[i].corners[(j + 1) % 4 + 4].y) * (features_refined[i].corners[j + 4].y - features_refined[i].corners[(j + 1) % 4 + 4].y));
+            line_function[1] = (features_refined[i].corners[j + 4].x - features_refined[i].corners[(j + 1) % 4 + 4].x) / sqrt((features_refined[i].corners[j + 4].x - features_refined[i].corners[(j + 1) % 4 + 4].x) * (features_refined[i].corners[j + 4].x - features_refined[i].corners[(j + 1) % 4 + 4].x) + (features_refined[i].corners[j + 4].y - features_refined[i].corners[(j + 1) % 4 + 4].y) * (features_refined[i].corners[j + 4].y - features_refined[i].corners[(j + 1) % 4 + 4].y));;
+            line_function[2] = -line_function[0] * features_refined[i].corners[j + 4].x - line_function[1] * features_refined[i].corners[j + 4].y;
+
+            x_min = src.cols;
+            x_max = 0;
+            y_min = src.rows;
+            y_max = 0;
+            contours.clear();
+            inlier_pixels.clear();
+            inlier_points.clear();
+
+            point_dist = distance_2points(features_refined[i].corners[j + 4], features_refined[i].corners[(j + 1) % 4 + 4]);
+            ratio_start = point_dist < 30 ? 0.1 : 3 / point_dist;
+            ratio_end = point_dist < 30 ? 0.9 : 0.4 + 15 / point_dist;
+            Point2f corner_start = features_refined[i].corners[j + 4] * (1 - ratio_start) + features_refined[i].corners[(j + 1) % 4 + 4] * ratio_start;
+            Point2f corner_end = features_refined[i].corners[j + 4] * (1 - ratio_end) + features_refined[i].corners[(j + 1) % 4 + 4] * ratio_end;
+
+            float k_line = (features_refined[i].corners[j + 4].y - features_refined[i].corners[(j + 1) % 4 + 4].y) / (features_refined[i].corners[j + 4].x - features_refined[i].corners[(j + 1) % 4 + 4].x);
+            if (abs(k_line) > 1000) k_line = 1000; // avoid vertical lines
+            if (abs(k_line - 0) < 1e-7) k_line = 1e-5; // avoid horizon lines
+
+            float b_line = features_refined[i].corners[j + 4].y - k_line * features_refined[i].corners[j + 4].x;
+            Point2f normal_line = Point2f(k_line, -1);
+            float b_line_upon = b_line - subPixWindow * norm(normal_line);
+            float b_line_down = b_line + subPixWindow * norm(normal_line);
+
+            Point2f normal_orthline = Point2f(1 / k_line, 1);
+            Point2f normal_paral = Point2f((features_refined[i].corners[j + 4].y - features_refined[i].corners[(j + 3) % 4 + 4].y) / (features_refined[i].corners[j + 4].x - features_refined[i].corners[(j + 3) % 4 + 4].x), -1);
+            float b_orthline_upon = -corner_end.y - normal_orthline.x * corner_end.x;
+            float b_orthline_down = corner_start.y - normal_paral.x * corner_start.x;
+
+            // AX = B
+            A.at<float>(0, 0) = normal_line.x;
+            A.at<float>(0, 1) = normal_line.y;
+            A.at<float>(1, 0) = normal_paral.x;
+            A.at<float>(1, 1) = normal_paral.y;
+
+            //Left-up intersection
+            B.at<float>(0, 0) = -b_line_upon;
+            B.at<float>(1, 0) = -b_orthline_down;
+            if (determinant(A) != 0) {
+                solve(A, B, sol);
+                contours.push_back(Point2f(sol.at<float>(0, 0), sol.at<float>(1, 0)));
+                if (sol.at<float>(0, 0) > x_max) x_max = sol.at<float>(0, 0);
+                if (sol.at<float>(1, 0) > y_max) y_max = sol.at<float>(1, 0);
+                if (sol.at<float>(0, 0) < x_min) x_min = sol.at<float>(0, 0);
+                if (sol.at<float>(1, 0) < y_min) y_min = sol.at<float>(1, 0);
+            }
+
+            //Left-down intersection
+            B.at<float>(0, 0) = -b_line_down;
+            B.at<float>(1, 0) = -b_orthline_down;
+            if (determinant(A) != 0) {
+                solve(A, B, sol);
+                contours.push_back(Point2f(sol.at<float>(0, 0), sol.at<float>(1, 0)));
+                if (sol.at<float>(0, 0) > x_max) x_max = sol.at<float>(0, 0);
+                if (sol.at<float>(1, 0) > y_max) y_max = sol.at<float>(1, 0);
+                if (sol.at<float>(0, 0) < x_min) x_min = sol.at<float>(0, 0);
+                if (sol.at<float>(1, 0) < y_min) y_min = sol.at<float>(1, 0);
+            }
+
+            // AX = B
+            A.at<float>(0, 0) = normal_line.x;
+            A.at<float>(0, 1) = normal_line.y;
+            A.at<float>(1, 0) = normal_orthline.x;
+            A.at<float>(1, 1) = normal_orthline.y;
+
+            //Right-down intersection
+            B.at<float>(0, 0) = -b_line_down;
+            B.at<float>(1, 0) = -b_orthline_upon;
+            if (determinant(A) != 0) {
+                solve(A, B, sol);
+                contours.push_back(Point2f(sol.at<float>(0, 0), sol.at<float>(1, 0)));
+                if (sol.at<float>(0, 0) > x_max) x_max = sol.at<float>(0, 0);
+                if (sol.at<float>(1, 0) > y_max) y_max = sol.at<float>(1, 0);
+                if (sol.at<float>(0, 0) < x_min) x_min = sol.at<float>(0, 0);
+                if (sol.at<float>(1, 0) < y_min) y_min = sol.at<float>(1, 0);
+            }
+
+            //Right-up intersection
+            B.at<float>(0, 0) = -b_line_upon;
+            B.at<float>(1, 0) = -b_orthline_upon;
             if (determinant(A) != 0) {
                 solve(A, B, sol);
                 contours.push_back(Point2f(sol.at<float>(0, 0), sol.at<float>(1, 0)));
@@ -1002,25 +1318,25 @@ void corner_detector::edgeSubPix(const Mat& src, vector<featureInfo>& features, 
             buildProblem(&problem, inlier_points, inlier_pixels);
             Solve(options, &problem, &summary);
             //cout << summary.BriefReport() << endl;
-            
+
             Point2f start_after_ceres = Point2f(features_refined[i].corners[j + 4].x, (-features_refined[i].corners[j + 4].x * line_function[0] - line_function[2]) / line_function[1]);
             Point2f end_after_ceres = Point2f(features_refined[i].corners[(j + 1) % 4 + 4].x, (-features_refined[i].corners[(j + 1) % 4 + 4].x * line_function[0] - line_function[2]) / line_function[1]);
             //line(imgMark, start_after_ceres, end_after_ceres, Scalar(0, 255, 0), 1);
             //imshow("edge subpixel", imgMark);
             //waitKey(0);
-            
-            line_func[j].clear();
-            line_func[j].push_back(line_function[0]);
-            line_func[j].push_back(line_function[1]);
-            line_func[j].push_back(line_function[2]);
+
+            line_func[j + 4].clear();
+            line_func[j + 4].push_back(line_function[0]);
+            line_func[j + 4].push_back(line_function[1]);
+            line_func[j + 4].push_back(line_function[2]);
         }
             
         for (int j = 0; j < 4; j++) {
-            A.at<float>(0, 0) = line_func[j][0];
-            A.at<float>(0, 1) = line_func[j][1];
+            A.at<float>(0, 0) = line_func[j + 4][0];
+            A.at<float>(0, 1) = line_func[j + 4][1];
             A.at<float>(1, 0) = line_func[(j + 3) % 4][0];
             A.at<float>(1, 1) = line_func[(j + 3) % 4][1];
-            B.at<float>(0, 0) = -line_func[j][2];
+            B.at<float>(0, 0) = -line_func[j + 4][2];
             B.at<float>(1, 0) = -line_func[(j + 3) % 4][2];
             if (determinant(A) != 0) {
                 solve(A, B, sol);
@@ -1030,6 +1346,484 @@ void corner_detector::edgeSubPix(const Mat& src, vector<featureInfo>& features, 
         }
     }
     
+}
+
+void corner_detector::edgeRefine(const Mat& src, vector<featureInfo>& features, vector<featureInfo>& features_refined, int subPixWindow)
+{
+    for (int i = 0; i < features.size(); i++) {
+        double lines_next[4][4], lines_last[4][4]; // for each line, [Ex Ey nx ny]
+
+        for (int edge = 0; edge < 4; edge++) {
+            int a = edge, b = (edge + 1) & 3; // indices of the end points.
+
+            // compute the normal to the current line estimate
+            double nx = features[i].corners[b].y - features[i].corners[a].y;
+            double ny = -features[i].corners[b].x + features[i].corners[a].x;
+            double mag = sqrt(nx * nx + ny * ny);
+            nx /= mag;
+            ny /= mag;
+
+            // we will now fit a NEW line by sampling points near
+            // our original line that have large gradients. On really big tags,
+            // we're willing to sample more to get an even better estimate.
+            int nsamples = max(128, mag / 8); // XXX tunable
+
+            // stats for fitting a line...
+            double Mx = 0, My = 0, Mxx = 0, Mxy = 0, Myy = 0, N = 0;
+
+            for (int s = 0; s < nsamples * 1; s++) {
+                // compute a point along the line... Note, we're avoiding
+                // sampling *right* at the corners, since those points are
+                // the least reliable.
+                double alpha = (15.0 + s) / (nsamples + 30);
+                double x0 = alpha * features[i].corners[a].x + (1 - alpha) * features[i].corners[b].x;
+                double y0 = alpha * features[i].corners[a].y + (1 - alpha) * features[i].corners[b].y;
+
+                // search along the normal to this line, looking at the
+                // gradients along the way. We're looking for a strong
+                // response.
+                double Mn = 0;
+                double Mcount = 0;
+                double range = subPixWindow;
+
+                for (double n = -range; n <= range; n += 0.25) {
+                    // Because of the guaranteed winding order of the
+                    // points in the quad, we will start inside the white
+                    // portion of the quad and work our way outward.
+                    //
+                    // sample to points (x1,y1) and (x2,y2) XXX tunable:
+                    // how far +/- to look? Small values compute the
+                    // gradient more precisely, but are more sensitive to
+                    // noise.
+                    double grange = 1;
+                    int x1 = x0 + (n + grange) * nx;
+                    int y1 = y0 + (n + grange) * ny;
+                    if (x1 < 0 || x1 >= src.cols || y1 < 0 || y1 >= src.rows)
+                        continue;
+
+                    int x2 = x0 + (n - grange) * nx;
+                    int y2 = y0 + (n - grange) * ny;
+                    if (x2 < 0 || x2 >= src.cols || y2 < 0 || y2 >= src.rows)
+                        continue;
+
+                    float g1 = src.at<float>(y1, x1);
+                    float g2 = src.at<float>(y2, x2);
+
+                    if (g1 < g2) // reject points whose gradient is "backwards". They can only hurt us.
+                        continue;
+
+                    double weight = (g2 - g1) * (g2 - g1); // XXX tunable. What shape for weight=f(g2-g1)?
+
+                    // compute weighted average of the gradient at this point.
+                    Mn += weight * n;
+                    Mcount += weight;
+                }
+
+                // what was the average point along the line?
+                if (Mcount == 0)
+                    continue;
+
+                double n0 = Mn / Mcount;
+
+                // where is the point along the line?
+                double bestx = x0 + n0 * nx;
+                double besty = y0 + n0 * ny;
+
+                // update our line fit statistics
+                Mx += bestx * (1 - alpha);
+                My += besty * (1 - alpha);
+                Mxx += bestx * bestx * (1 - alpha);
+                Mxy += bestx * besty * (1 - alpha);
+                Myy += besty * besty * (1 - alpha);
+                N += (1 - alpha);
+            }
+
+            // fit a line
+            double Ex = Mx / N, Ey = My / N;
+            double Cxx = Mxx / N - Ex * Ex;
+            double Cxy = Mxy / N - Ex * Ey;
+            double Cyy = Myy / N - Ey * Ey;
+
+            // TODO: Can replace this with same code as in fit_line.
+            double normal_theta = .5 * atan2f(-2 * Cxy, (Cyy - Cxx));
+            nx = cosf(normal_theta);
+            ny = sinf(normal_theta);
+            lines_next[edge][0] = Ex;
+            lines_next[edge][1] = Ey;
+            lines_next[edge][2] = nx;
+            lines_next[edge][3] = ny;
+        }
+
+        for (int edge = 0; edge < 4; edge++) {
+            int a = edge, b = (edge + 1) & 3; // indices of the end points.
+
+            // compute the normal to the current line estimate
+            double nx = features[i].corners[b].y - features[i].corners[a].y;
+            double ny = -features[i].corners[b].x + features[i].corners[a].x;
+            double mag = sqrt(nx * nx + ny * ny);
+            nx /= mag;
+            ny /= mag;
+
+            // we will now fit a NEW line by sampling points near
+            // our original line that have large gradients. On really big tags,
+            // we're willing to sample more to get an even better estimate.
+            int nsamples = max(128, mag / 8); // XXX tunable
+
+            // stats for fitting a line...
+            double Mx = 0, My = 0, Mxx = 0, Mxy = 0, Myy = 0, N = 0;
+
+            for (int s = nsamples * 0; s < nsamples * 1; s++) {
+                // compute a point along the line... Note, we're avoiding
+                // sampling *right* at the corners, since those points are
+                // the least reliable.
+                double alpha = (15.0 + s) / (nsamples + 30);
+                double x0 = alpha * features[i].corners[a].x + (1 - alpha) * features[i].corners[b].x;
+                double y0 = alpha * features[i].corners[a].y + (1 - alpha) * features[i].corners[b].y;
+
+                // search along the normal to this line, looking at the
+                // gradients along the way. We're looking for a strong
+                // response.
+                double Mn = 0;
+                double Mcount = 0;
+                double range = subPixWindow;
+
+                for (double n = -range; n <= range; n += 0.25) {
+                    // Because of the guaranteed winding order of the
+                    // points in the quad, we will start inside the white
+                    // portion of the quad and work our way outward.
+                    //
+                    // sample to points (x1,y1) and (x2,y2) XXX tunable:
+                    // how far +/- to look? Small values compute the
+                    // gradient more precisely, but are more sensitive to
+                    // noise.
+                    double grange = 1;
+                    int x1 = x0 + (n + grange) * nx;
+                    int y1 = y0 + (n + grange) * ny;
+                    if (x1 < 0 || x1 >= src.cols || y1 < 0 || y1 >= src.rows)
+                        continue;
+
+                    int x2 = x0 + (n - grange) * nx;
+                    int y2 = y0 + (n - grange) * ny;
+                    if (x2 < 0 || x2 >= src.cols || y2 < 0 || y2 >= src.rows)
+                        continue;
+
+                    float g1 = src.at<float>(y1, x1);
+                    float g2 = src.at<float>(y2, x2);
+
+                    if (g1 < g2) // reject points whose gradient is "backwards". They can only hurt us.
+                        continue;
+
+                    double weight = (g2 - g1) * (g2 - g1); // XXX tunable. What shape for weight=f(g2-g1)?
+
+                    // compute weighted average of the gradient at this point.
+                    Mn += weight * n;
+                    Mcount += weight;
+                }
+
+                // what was the average point along the line?
+                if (Mcount == 0)
+                    continue;
+
+                double n0 = Mn / Mcount;
+
+                // where is the point along the line?
+                double bestx = x0 + n0 * nx;
+                double besty = y0 + n0 * ny;
+
+                // update our line fit statistics
+                Mx += bestx * alpha;
+                My += besty * alpha;
+                Mxx += bestx * bestx * alpha;
+                Mxy += bestx * besty * alpha;
+                Myy += besty * besty * alpha;
+                N += alpha;
+            }
+
+            // fit a line
+            double Ex = Mx / N, Ey = My / N;
+            double Cxx = Mxx / N - Ex * Ex;
+            double Cxy = Mxy / N - Ex * Ey;
+            double Cyy = Myy / N - Ey * Ey;
+
+            // TODO: Can replace this with same code as in fit_line.
+            double normal_theta = .5 * atan2f(-2 * Cxy, (Cyy - Cxx));
+            nx = cosf(normal_theta);
+            ny = sinf(normal_theta);
+            lines_last[edge][0] = Ex;
+            lines_last[edge][1] = Ey;
+            lines_last[edge][2] = nx;
+            lines_last[edge][3] = ny;
+        }
+
+        // now refit the corners of the quad
+        for (int it = 0; it < 4; it++) {
+            double A00 = lines_next[it][3], A01 = -lines_last[(it + 1) & 3][3];
+            double A10 = -lines_next[it][2], A11 = lines_last[(it + 1) & 3][2];
+            double B0 = -lines_next[it][0] + lines_last[(it + 1) & 3][0];
+            double B1 = -lines_next[it][1] + lines_last[(it + 1) & 3][1];
+            
+            double det = A00 * A11 - A10 * A01;
+            double W00 = A11 / det, W01 = -A01 / det;
+            double L0 = W00 * B0 + W01 * B1;
+                        
+            double dist_old_new = distance_2points(features[i].corners[(it + 1) & 3], Point2f(lines_next[it][0] + L0 * A00, lines_next[it][1] + L0 * A10));
+
+            if (fabs(det) > 0.001) {
+                // solve
+                features_refined[i].corners[(it + 1) & 3].x = lines_next[it][0] + L0 * A00;
+                features_refined[i].corners[(it + 1) & 3].y = lines_next[it][1] + L0 * A10;
+            }
+            else {
+                features_refined[i].corners[(it + 1) & 3] = features[i].corners[(it + 1) & 3];
+            }
+        }
+
+        for (int edge = 0; edge < 4; edge++) {
+            int a = edge + 4, b = (edge + 1) % 4 + 4; // indices of the end points.
+
+            // compute the normal to the current line estimate
+            double nx = features[i].corners[b].y - features[i].corners[a].y;
+            double ny = -features[i].corners[b].x + features[i].corners[a].x;
+            double mag = sqrt(nx * nx + ny * ny);
+            nx /= mag;
+            ny /= mag;
+
+            // we will now fit a NEW line by sampling points near
+            // our original line that have large gradients. On really big tags,
+            // we're willing to sample more to get an even better estimate.
+            int nsamples = max(128, mag / 8); // XXX tunable
+
+            // stats for fitting a line...
+            double Mx = 0, My = 0, Mxx = 0, Mxy = 0, Myy = 0, N = 0;
+
+            for (int s = 0; s < nsamples * 1; s++) {
+                // compute a point along the line... Note, we're avoiding
+                // sampling *right* at the corners, since those points are
+                // the least reliable.
+                double alpha = (15.0 + s) / (nsamples + 30);
+                double x0 = alpha * features[i].corners[a].x + (1 - alpha) * features[i].corners[b].x;
+                double y0 = alpha * features[i].corners[a].y + (1 - alpha) * features[i].corners[b].y;
+
+                // search along the normal to this line, looking at the
+                // gradients along the way. We're looking for a strong
+                // response.
+                double Mn = 0;
+                double Mcount = 0;
+
+                // XXX tunable: how far to search?  We want to search far
+                // enough that we find the best edge, but not so far that
+                // we hit other edges that aren't part of the tag. We
+                // shouldn't ever have to search more than quad_decimate,
+                // since otherwise we would (ideally) have started our
+                // search on another pixel in the first place. Likewise,
+                // for very small tags, we don't want the range to be too
+                // big.
+                double range = subPixWindow;
+
+                // XXX tunable step size.
+                for (double n = -range; n <= range; n += 0.25) {
+                    // Because of the guaranteed winding order of the
+                    // points in the quad, we will start inside the white
+                    // portion of the quad and work our way outward.
+                    //
+                    // sample to points (x1,y1) and (x2,y2) XXX tunable:
+                    // how far +/- to look? Small values compute the
+                    // gradient more precisely, but are more sensitive to
+                    // noise.
+                    double grange = 1;
+                    int x1 = x0 + (n + grange) * nx;
+                    int y1 = y0 + (n + grange) * ny;
+                    if (x1 < 0 || x1 >= src.cols || y1 < 0 || y1 >= src.rows)
+                        continue;
+
+                    int x2 = x0 + (n - grange) * nx;
+                    int y2 = y0 + (n - grange) * ny;
+                    if (x2 < 0 || x2 >= src.cols || y2 < 0 || y2 >= src.rows)
+                        continue;
+
+                    float g1 = src.at<float>(y1, x1);
+                    float g2 = src.at<float>(y2, x2);
+
+                    if (g1 < g2) // reject points whose gradient is "backwards". They can only hurt us.
+                        continue;
+
+                    double weight = (g2 - g1) * (g2 - g1); // XXX tunable. What shape for weight=f(g2-g1)?
+
+                    // compute weighted average of the gradient at this point.
+                    Mn += weight * n;
+                    Mcount += weight;
+                }
+
+                // what was the average point along the line?
+                if (Mcount == 0)
+                    continue;
+
+                double n0 = Mn / Mcount;
+
+                // where is the point along the line?
+                double bestx = x0 + n0 * nx;
+                double besty = y0 + n0 * ny;
+
+                // update our line fit statistics
+                Mx += bestx * (1 - alpha);
+                My += besty * (1 - alpha);
+                Mxx += bestx * bestx * (1 - alpha);
+                Mxy += bestx * besty * (1 - alpha);
+                Myy += besty * besty * (1 - alpha);
+                N += (1 - alpha);
+            }
+
+            // fit a line
+            double Ex = Mx / N, Ey = My / N;
+            double Cxx = Mxx / N - Ex * Ex;
+            double Cxy = Mxy / N - Ex * Ey;
+            double Cyy = Myy / N - Ey * Ey;
+
+            // TODO: Can replace this with same code as in fit_line.
+            double normal_theta = .5 * atan2f(-2 * Cxy, (Cyy - Cxx));
+            nx = cosf(normal_theta);
+            ny = sinf(normal_theta);
+            lines_next[edge][0] = Ex;
+            lines_next[edge][1] = Ey;
+            lines_next[edge][2] = nx;
+            lines_next[edge][3] = ny;
+        }
+
+        for (int edge = 0; edge < 4; edge++) {
+            int a = edge + 4, b = (edge + 1) % 4 + 4; // indices of the end points.
+
+            // compute the normal to the current line estimate
+            double nx = features[i].corners[b].y - features[i].corners[a].y;
+            double ny = -features[i].corners[b].x + features[i].corners[a].x;
+            double mag = sqrt(nx * nx + ny * ny);
+            nx /= mag;
+            ny /= mag;
+
+            // we will now fit a NEW line by sampling points near
+            // our original line that have large gradients. On really big tags,
+            // we're willing to sample more to get an even better estimate.
+            int nsamples = max(128, mag / 8); // XXX tunable
+
+            // stats for fitting a line...
+            double Mx = 0, My = 0, Mxx = 0, Mxy = 0, Myy = 0, N = 0;
+
+            for (int s = 0; s < nsamples * 1; s++) {
+                // compute a point along the line... Note, we're avoiding
+                // sampling *right* at the corners, since those points are
+                // the least reliable.
+                double alpha = (15.0 + s) / (nsamples + 30);
+                double x0 = alpha * features[i].corners[a].x + (1 - alpha) * features[i].corners[b].x;
+                double y0 = alpha * features[i].corners[a].y + (1 - alpha) * features[i].corners[b].y;
+
+                // search along the normal to this line, looking at the
+                // gradients along the way. We're looking for a strong
+                // response.
+                double Mn = 0;
+                double Mcount = 0;
+
+                // XXX tunable: how far to search?  We want to search far
+                // enough that we find the best edge, but not so far that
+                // we hit other edges that aren't part of the tag. We
+                // shouldn't ever have to search more than quad_decimate,
+                // since otherwise we would (ideally) have started our
+                // search on another pixel in the first place. Likewise,
+                // for very small tags, we don't want the range to be too
+                // big.
+                double range = subPixWindow;
+
+                // XXX tunable step size.
+                for (double n = -range; n <= range; n += 0.25) {
+                    // Because of the guaranteed winding order of the
+                    // points in the quad, we will start inside the white
+                    // portion of the quad and work our way outward.
+                    //
+                    // sample to points (x1,y1) and (x2,y2) XXX tunable:
+                    // how far +/- to look? Small values compute the
+                    // gradient more precisely, but are more sensitive to
+                    // noise.
+                    double grange = 1;
+                    int x1 = x0 + (n + grange) * nx;
+                    int y1 = y0 + (n + grange) * ny;
+                    if (x1 < 0 || x1 >= src.cols || y1 < 0 || y1 >= src.rows)
+                        continue;
+
+                    int x2 = x0 + (n - grange) * nx;
+                    int y2 = y0 + (n - grange) * ny;
+                    if (x2 < 0 || x2 >= src.cols || y2 < 0 || y2 >= src.rows)
+                        continue;
+
+                    float g1 = src.at<float>(y1, x1);
+                    float g2 = src.at<float>(y2, x2);
+
+                    if (g1 < g2) // reject points whose gradient is "backwards". They can only hurt us.
+                        continue;
+
+                    double weight = (g2 - g1) * (g2 - g1); // XXX tunable. What shape for weight=f(g2-g1)?
+
+                    // compute weighted average of the gradient at this point.
+                    Mn += weight * n;
+                    Mcount += weight;
+                }
+
+                // what was the average point along the line?
+                if (Mcount == 0)
+                    continue;
+
+                double n0 = Mn / Mcount;
+
+                // where is the point along the line?
+                double bestx = x0 + n0 * nx;
+                double besty = y0 + n0 * ny;
+
+                // update our line fit statistics
+                Mx += bestx * alpha;
+                My += besty * alpha;
+                Mxx += bestx * bestx * alpha;
+                Mxy += bestx * besty * alpha;
+                Myy += besty * besty * alpha;
+                N += alpha;
+            }
+
+            // fit a line
+            double Ex = Mx / N, Ey = My / N;
+            double Cxx = Mxx / N - Ex * Ex;
+            double Cxy = Mxy / N - Ex * Ey;
+            double Cyy = Myy / N - Ey * Ey;
+
+            // TODO: Can replace this with same code as in fit_line.
+            double normal_theta = .5 * atan2f(-2 * Cxy, (Cyy - Cxx));
+            nx = cosf(normal_theta);
+            ny = sinf(normal_theta);
+            lines_last[edge][0] = Ex;
+            lines_last[edge][1] = Ey;
+            lines_last[edge][2] = nx;
+            lines_last[edge][3] = ny;
+        }
+
+        // now refit the corners of the quad
+        for (int it = 0; it < 4; it++) {
+
+            // solve for the intersection of lines (it) and (it+1)&3.
+            double A00 = lines_next[it][3], A01 = -lines_last[(it + 1) & 3][3];
+            double A10 = -lines_next[it][2], A11 = lines_last[(it + 1) & 3][2];
+            double B0 = -lines_next[it][0] + lines_last[(it + 1) & 3][0];
+            double B1 = -lines_next[it][1] + lines_last[(it + 1) & 3][1];
+
+            double det = A00 * A11 - A10 * A01;
+            double W00 = A11 / det, W01 = -A01 / det;
+            double L0 = W00 * B0 + W01 * B1;
+
+            double dist_old_new = distance_2points(features[i].corners[(it + 1) % 4 + 4], Point2f(lines_next[it][0] + L0 * A00, lines_next[it][1] + L0 * A10));
+
+            if (fabs(det) > 0.001) {
+                features_refined[i].corners[(it + 1) % 4 + 4].x = lines_next[it][0] + L0 * A00;
+                features_refined[i].corners[(it + 1) % 4 + 4].y = lines_next[it][1] + L0 * A10;
+            }
+            else {
+                features_refined[i].corners[(it + 1) % 4 + 4] = features[i].corners[(it + 1) % 4 + 4];
+            }
+        }
+    }    
 }
 
 void corner_detector::buildProblem(Problem* problem, vector<Point> inlier_points, vector<float> inlier_pixels) {
@@ -1072,7 +1866,7 @@ void corner_detector::markerOrganization(vector<featureInfo> feature, vector<Mar
             vector_center = feature[i].feature_center - feature[j].feature_center;
             vector_longedge = feature[i].corners[0] - feature[i].corners[5];
             center_angle = (vector_center.x * vector_longedge.x + vector_center.y * vector_longedge.y) / sqrt((vector_center.x * vector_center.x + vector_center.y * vector_center.y) * (vector_longedge.x * vector_longedge.x + vector_longedge.y * vector_longedge.y));
-            if ((abs(feature[i].feature_angle - feature[j].feature_angle) < threshold_angle) && (abs(area(feature[i]) - area(feature[j])) < area_ratio * min(area(feature[i]), area(feature[j]))) && (distance_2points(feature[i].feature_center, feature[j].feature_center) < distance_2points(feature[i].corners[0], feature[i].corners[5])) && (abs(center_angle) < threshold_vertical)){
+            if ((abs(feature[i].feature_angle - feature[j].feature_angle) < threshold_angle || abs(180 - abs(feature[i].feature_angle - feature[j].feature_angle)) < threshold_angle) && (distance_2points(feature[i].feature_center, feature[j].feature_center) < distance_2points(feature[i].corners[0], feature[i].corners[5])) && (abs(center_angle) < threshold_vertical)){
                 int father_i = union_find(i), father_j = union_find(j);
                 if (father_i != father_j)
                     father[father_j] = father_i;
@@ -1115,10 +1909,12 @@ void corner_detector::markerOrganization(vector<featureInfo> feature, vector<Mar
             mark.cornerLists.push_back(feature[marker_ID[i][j]].corners);
             mark.feature_center.push_back(feature[marker_ID[i][j]].feature_center);
             mark.edge_length.push_back((distance_2points(feature[marker_ID[i][j]].corners[0], feature[marker_ID[i][j]].corners[1]) + distance_2points(feature[marker_ID[i][j]].corners[4], feature[marker_ID[i][j]].corners[5]) / 2));
-            marker_angle += fastAtan2(mark.cornerLists[j][0].y - mark.cornerLists[j][5].y, mark.cornerLists[j][0].x - mark.cornerLists[j][5].x);
+            double angle_now = fastAtan2(mark.cornerLists[j][0].y - mark.cornerLists[j][5].y, mark.cornerLists[j][0].x - mark.cornerLists[j][5].x);
+            if (angle_now > 180) angle_now -= 180;
+            marker_angle += angle_now;
         }
         marker_angle /= mark.cornerLists.size();
-        if (marker_angle > 180) marker_angle -= 180;
+        
         if (abs(marker_angle) < 45 || abs(marker_angle) > 135) {
             auto p = sort_permutation(mark.feature_center,
                 [](const auto& a, const auto& b) { return a.y > b.y; });
@@ -1276,7 +2072,10 @@ void corner_detector::featureExtraction(MarkerInfo& marker_src, MarkerInfo& mark
             }
         }
         
-        if (abs(length_1[1] - length_2[1]) > 0.02 * (length_1[1] + length_2[1]) || length_1[3] < 200) {
+        //cout << length_1[0] << " " << length_1[1] << " " << length_1[2] << " " << length_1[3] << " " << cross_ratio_left << " " << ID_left << endl;
+        //cout << length_2[0] << " " << length_2[1] << " " << length_2[2] << " " << length_2[3] << " " << cross_ratio_right << " " << ID_right << endl;
+
+        if (abs(length_1[1] - length_2[1]) > 0.05 * (length_1[1] + length_2[1]) || length_1[3] < 200) {
             marker_dst.cr_left.push_back(cross_ratio_left);
             marker_dst.cr_right.push_back(cross_ratio_right);
             marker_dst.feature_ID_left.push_back(-1);
@@ -1284,9 +2083,6 @@ void corner_detector::featureExtraction(MarkerInfo& marker_src, MarkerInfo& mark
             marker_dst.feature_ID.push_back(-2);
             continue;
         }
-
-        //cout << length_1[0] << " " << length_1[1] << " " << length_1[2] << " " << length_1[3] << " " << cross_ratio_left << " " << ID_left << endl;
-        //cout << length_2[0] << " " << length_2[1] << " " << length_2[2] << " " << length_2[3] << " " << cross_ratio_right << " " << ID_right << endl;
 
         marker_dst.cr_left.push_back(cross_ratio_left);
         marker_dst.cr_right.push_back(cross_ratio_right);
@@ -1315,7 +2111,7 @@ void corner_detector::markerDecoder(vector<MarkerInfo> markers_src, vector<Marke
         }
         legal_marker_len = 0;
         for (int j = 0; j < 20; j++) {
-            if (code[j] != -1) legal_marker_len++;
+            if (code[j] > -1) legal_marker_len++;
         }
 
         Pos_ID = match_dictionary(code, state, pos_now, legal_marker_len);

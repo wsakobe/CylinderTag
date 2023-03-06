@@ -34,6 +34,7 @@ public:
 
 private:
     int ID;
+    bool isFoundModel;
     vector<Point2f> image_points;
     vector<Point3f> model_points;
 
