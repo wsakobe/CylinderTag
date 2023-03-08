@@ -27,13 +27,8 @@ int main(int argc, char** argv){
 	}*/
 	
 	//read_from_image("F:/CylinderTag/Experiment/ArUco/aruco-markers-master/pose_estimation/src/test.bmp", 1);
-	read_from_video("F:/CylinderTag/Experiment/detection_rate_with_angle/det_42.avi"); 
-	//read_from_video("F:/CylinderTag/Experiment/Pose_experiments/Distances/test_videos/distance_70.avi"); 
-	//read_online();
+	read_from_video("F:/CylinderTag/Experiment/detection_rate_with_angle/det_-90.avi"); 
 
-	waitKey(0);
-	destroyAllWindows();
-	system("pause");
 	return 0;
 }
 
@@ -89,17 +84,16 @@ void read_from_video(const string& path){
 	marker.loadModel("CTag_2f12c.model", marker_model);
 	marker.loadCamera("cameraParams.yml", camera);
 
-	/*
 	char fname[256];
-	sprintf(fname, "F:/CylinderTag/Experiment/Pose_experiments/Distances/Rot/CylinderTag/70.txt");
+	sprintf(fname, "F:/CylinderTag/Experiment/detection_rate_with_angle/pose_inform/yaw/Rot/-90.txt");
 	ofstream Files;
 	Files.open(fname, ios::out | ios::trunc);
 	Files.close();
 
-	sprintf(fname, "F:/CylinderTag/Experiment/Pose_experiments/Distances/Trans/CylinderTag/70.txt");
+	sprintf(fname, "F:/CylinderTag/Experiment/detection_rate_with_angle/pose_inform/yaw/Trans/-90.txt");
 	Files.open(fname, ios::out | ios::trunc);
 	Files.close();
-	*/
+	
 	int TP = 0, P_ALL = 0, FN = 0;
 	for (int i = 0; i < 0; i++)
 		capture.read(frame);
@@ -108,7 +102,7 @@ void read_from_video(const string& path){
 		cvtColor(frame, img_gray, COLOR_BGR2GRAY);
 		markers.clear();
 		pose.clear();
-		marker.detect(img_gray, markers, 5, true, 3);
+		marker.detect(img_gray, markers, 5, true, 5);
 		for (int i = 0; i < markers.size(); i++) {
 			cout << "ID " << i << ": " << markers[i].markerID + 1 << endl;
 			if (markers[i].markerID == 21) {
@@ -123,21 +117,21 @@ void read_from_video(const string& path){
 		marker.estimatePose(img_gray, markers, marker_model, camera, pose, false);
 		if (!pose.empty()) {
 			marker.drawAxis(img_gray, markers, marker_model, pose, camera, 8);
-
 			//cout << pose[0].rvec << endl << pose[0].tvec << endl << endl;
+
 			Mat R;
 			Rodrigues(pose[0].rvec, R);
-			/*
-			//output
-			sprintf(fname, "F:/CylinderTag/Experiment/Pose_experiments/Distances/Rot/CylinderTag/70.txt");
+
+			//output 
+			sprintf(fname, "F:/CylinderTag/Experiment/detection_rate_with_angle/pose_inform/yaw/Rot/-90.txt");
 			Files.open(fname, ios::app);
-			Files << format(pose[0].rvec, cv::Formatter::FMT_CSV) << endl;
+			Files << format(R, cv::Formatter::FMT_CSV) << endl;
 			Files.close();
 
-			sprintf(fname, "F:/CylinderTag/Experiment/Pose_experiments/Distances/Trans/CylinderTag/70.txt");
+			sprintf(fname, "F:/CylinderTag/Experiment/detection_rate_with_angle/pose_inform/yaw/Trans/-90.txt");
 			Files.open(fname, ios::app);
 			Files << format(pose[0].tvec, cv::Formatter::FMT_CSV) << endl;
-			Files.close();*/
+			Files.close();
 		}
 	}
 	std::cout << "Precision: " << (float)(TP * 1.0 / P_ALL) * 100 << "%" << std::endl;

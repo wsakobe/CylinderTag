@@ -65,6 +65,9 @@ void PoseEstimator::PnPSolver(MarkerInfo markers, vector<ModelInfo> reconstruct_
 		pose.markerID = -1;
 		return;
 	}
+	else {
+		pose.markerID = ID;
+	}
 		
 	for (int j = 0; j < markers.cornerLists.size(); j++) {
 		if (markers.cornerLists.size() > 3) {
@@ -91,7 +94,7 @@ void PoseEstimator::PnPSolver(MarkerInfo markers, vector<ModelInfo> reconstruct_
 		}
 	}
 	solvePnP(model_points, image_points, camera.Intrinsic, camera.distCoeffs, pose.rvec, pose.tvec, false, SOLVEPNP_EPNP);
-	//PoseBA(image_points, model_points, pose, camera);
+	PoseBA(image_points, model_points, pose, camera);
 }
 
 void PoseEstimator::PoseBA(vector<Point2f> imagePoints, vector<Point3f> worldPoints, PoseInfo pose, CamInfo camera)

@@ -135,7 +135,7 @@ void CylinderTag::detect(const Mat& img, vector<MarkerInfo>& markers_info, int a
 	}
 	imshow("Feature Organization", imgMark);
 	waitKey(1);
-	*/
+	
 	imgMark = img.clone();
 	cvtColor(img, imgMark, COLOR_GRAY2RGB);
 	for (int i = 0; i < markers.size(); i++) {
@@ -162,7 +162,7 @@ void CylinderTag::detect(const Mat& img, vector<MarkerInfo>& markers_info, int a
 		}
 	}
 	imshow("Output", imgMark);
-	waitKey(1);
+	waitKey(1);*/
 	
 	//cout << duration[0] << " " << duration[1] << " " << duration[2] << " " << duration[3] << " " << duration[4] << " " << duration[5] << " " << duration[6] << " " << duration[7] << endl;
 	//double ttime = duration[0] + duration[1] + duration[2] + duration[3] + duration[4] + duration[5] + duration[6] + duration[7];
