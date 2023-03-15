@@ -207,8 +207,8 @@ vector<int> corner_detector::expand_line(vector<Point> edge_point, int init, int
 
 void corner_detector::edgeExtraction(const Mat& img, vector<vector<Point>>& quadArea, vector<vector<Point2f>>& corners_init){
     // Display
-    Mat imgMark(img.rows, img.cols, CV_32FC3);
-    cvtColor(img, imgMark, COLOR_GRAY2RGB);
+    //Mat imgMark(img.rows, img.cols, CV_32FC3);
+    //cvtColor(img, imgMark, COLOR_GRAY2RGB);
 
     clock_t start,finish;  
     double duration; 
@@ -402,7 +402,7 @@ void corner_detector::edgeExtraction(const Mat& img, vector<vector<Point>>& quad
             }
             fitLine(edge_point_cluster[j], line_func[j], DIST_WELSCH, 0, 0.01, 0.01);
         }
-        
+        /*
         for (int k = 0; k < edge_point_cluster[0].size(); k++){
             circle(imgMark, edge_point_cluster[0][k], 0.5, Scalar(0, 250, 0), -1);
         }
@@ -415,7 +415,7 @@ void corner_detector::edgeExtraction(const Mat& img, vector<vector<Point>>& quad
         for (int k = 0; k < edge_point_cluster[3].size(); k++){
             circle(imgMark, edge_point_cluster[3][k], 0.5, Scalar(0, 120, 100), -1);
         }
-        
+        */
         if (flag_line_number) continue;
         for (int j = 0; j < 3; j++){
             for (int k = j + 1; k < 4; k++){
@@ -459,14 +459,13 @@ void corner_detector::edgeExtraction(const Mat& img, vector<vector<Point>>& quad
         }
         
         corners_init.push_back(corners_pass);
-        
-        
+        /*
         ostringstream oss;
         oss << corners_init.size() - 1;
         putText(imgMark, oss.str(), corners_pass[0], FONT_ITALIC, 0.6, Scalar(20, 200, 255), 1);
         for (int j = 0; j < corners_pass.size(); j++){
             circle(imgMark, corners_pass[j], 2, Scalar(120, 150, 0), -1);
-        }
+        }*/
     }     
     //imshow("corners initial", imgMark);
     //waitKey(0);

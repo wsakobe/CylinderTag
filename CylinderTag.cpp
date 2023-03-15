@@ -70,9 +70,9 @@ void CylinderTag::detect(const Mat& img, vector<MarkerInfo>& markers_info, int a
     cvtColor(img, imgMark, COLOR_GRAY2RGB);
 
 	//time record
-    double duration[10]; 
+    /*double duration[10]; 
 	TickMeter meter;
-	meter.start();
+	meter.start();*/
 	    
 	//Refresh
 	quadAreas_labeled.clear();
@@ -82,6 +82,7 @@ void CylinderTag::detect(const Mat& img, vector<MarkerInfo>& markers_info, int a
 
 	Mat img_resize, img_float;
     resize(img, img_resize, Size(img.cols / 2, img.rows / 2), 0.5, 0.5, INTER_CUBIC);
+	cout << img_resize.type() << " " << img_resize.channels() << endl;
     img_resize.convertTo(img_resize, CV_32FC1, 1.0 / 255);
 
     Mat img_binary(img_resize.rows, img_resize.cols, CV_8UC1);
@@ -113,8 +114,8 @@ void CylinderTag::detect(const Mat& img, vector<MarkerInfo>& markers_info, int a
 	detector.markerDecoder(markers, markers, this->state, this->featureSize);
 	markers_info = markers;
 
-	meter.stop();
-	duration[0] = meter.getTimeMilli();
+	//meter.stop();
+	//duration[0] = meter.getTimeMilli();
 
 	//Plot
 	/* 
@@ -134,7 +135,7 @@ void CylinderTag::detect(const Mat& img, vector<MarkerInfo>& markers_info, int a
 		putText(imgMark, oss.str(), features[i].feature_center, FONT_ITALIC, 0.6, Scalar(250, 250, 250), 2);
 	}
 	imshow("Feature Organization", imgMark);
-	waitKey(1);
+	waitKey(1);*/
 	
 	imgMark = img.clone();
 	cvtColor(img, imgMark, COLOR_GRAY2RGB);
@@ -162,11 +163,11 @@ void CylinderTag::detect(const Mat& img, vector<MarkerInfo>& markers_info, int a
 		}
 	}
 	imshow("Output", imgMark);
-	waitKey(1);*/
+	waitKey(1);
 	
 	//cout << duration[0] << " " << duration[1] << " " << duration[2] << " " << duration[3] << " " << duration[4] << " " << duration[5] << " " << duration[6] << " " << duration[7] << endl;
 	//double ttime = duration[0] + duration[1] + duration[2] + duration[3] + duration[4] + duration[5] + duration[6] + duration[7];
-	cout << "Total time: " << duration[0] << endl;
+	//cout << "Total time: " << duration[0] << endl;
 }
 
 void CylinderTag::loadModel(const string& path, vector<ModelInfo>& reconstruct_model){
