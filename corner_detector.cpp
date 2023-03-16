@@ -1865,7 +1865,7 @@ void corner_detector::markerOrganization(vector<featureInfo> feature, vector<Mar
             vector_center = feature[i].feature_center - feature[j].feature_center;
             vector_longedge = feature[i].corners[0] - feature[i].corners[5];
             center_angle = (vector_center.x * vector_longedge.x + vector_center.y * vector_longedge.y) / sqrt((vector_center.x * vector_center.x + vector_center.y * vector_center.y) * (vector_longedge.x * vector_longedge.x + vector_longedge.y * vector_longedge.y));
-            if ((abs(feature[i].feature_angle - feature[j].feature_angle) < threshold_angle || abs(180 - abs(feature[i].feature_angle - feature[j].feature_angle)) < threshold_angle) && (distance_2points(feature[i].feature_center, feature[j].feature_center) < distance_2points(feature[i].corners[0], feature[i].corners[5])) && (abs(center_angle) < threshold_vertical)){
+            if ((abs(feature[i].feature_angle - feature[j].feature_angle) < threshold_angle || abs(180 - abs(feature[i].feature_angle - feature[j].feature_angle)) < threshold_angle) && (distance_2points(feature[i].feature_center, feature[j].feature_center) < 0.3 * distance_2points(feature[i].corners[0], feature[i].corners[5])) && (abs(center_angle) < threshold_vertical)){
                 int father_i = union_find(i), father_j = union_find(j);
                 if (father_i != father_j)
                     father[father_j] = father_i;

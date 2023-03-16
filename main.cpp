@@ -164,11 +164,12 @@ void read_online() {
 	marker.loadModel("CTag_2f12c.model", marker_model);
 	marker.loadCamera("cameraParams.yml", camera);
 	
-	int t = 100;
+	int t = 500;
 	char fname[256];
 	ofstream Files;
 	
 	while (t--) {
+		cout << t << endl;
 		nRet[0] = MV_CC_GetImageBuffer(handle[0], &stImageInfo[0], 50);
 		if (nRet[0] == MV_OK)
 		{
@@ -187,11 +188,12 @@ void read_online() {
 				tvec = pose[0].tvec;
 				rvec.convertTo(rvec, CV_32FC1);
 				tvec.convertTo(tvec, CV_32FC1);
+				Rodrigues(rvec, R);
 
 				//output 
 				sprintf(fname, "./photo/rot.txt");
 				Files.open(fname, ios::app);
-				Files << format(rvec, cv::Formatter::FMT_CSV) << endl;
+				Files << format(R, cv::Formatter::FMT_CSV) << endl;
 				Files.close();
 
 				sprintf(fname, "./photo/trans.txt");
@@ -199,11 +201,10 @@ void read_online() {
 				Files << format(tvec, cv::Formatter::FMT_CSV) << endl;
 				Files.close();
 								
-				Rodrigues(rvec, R);
 				Mat end_effector(3, 1, CV_32FC1);
-				end_effector.at<float>(0, 0) = 0;
-				end_effector.at<float>(1, 0) = 80;
-				end_effector.at<float>(2, 0) = 297;
+				end_effector.at<float>(0, 0) = 1.0898;
+				end_effector.at<float>(1, 0) = 98.1998;
+				end_effector.at<float>(2, 0) = 319.2408;
 				sprintf(fname, "./photo/end.txt");
 				Files.open(fname, ios::app);
 				Files << format(R * end_effector + tvec, cv::Formatter::FMT_CSV) << endl;
@@ -215,7 +216,7 @@ void read_online() {
 		{
 			printf("Free Image Buffer fail! nRet [0x%x]\n", nRet[0]);
 		}
-		waitKey(20);
+		waitKey(1);
 	}
 
 	for (int i = 0; i < stDeviceList.nDeviceNum; i++) {

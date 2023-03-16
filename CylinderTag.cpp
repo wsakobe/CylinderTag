@@ -241,8 +241,8 @@ void CylinderTag::drawAxis(const Mat& img, vector<MarkerInfo> markers, vector<Mo
 		model_points.push_back(reconstruct_model[ID].base + Point3f(0.0372, 0.0372, 0.9986) * axisLength);
 		model_points.push_back(reconstruct_model[ID].base + Point3f(0.9980, -0.0520, -0.0353) * axisLength);
 		
-		model_points.push_back(Point3f(0, 80, 297));
-
+		model_points.push_back(Point3f(1.0898, 98.1998, 319.2408));
+			
 		imagePoints.clear();
 		projectPoints(model_points, pose[i].rvec, pose[i].tvec, camera.Intrinsic, camera.distCoeffs, imagePoints);
 		for (int i = 0; i < imagePoints.size() - 5; i++) {
@@ -254,7 +254,7 @@ void CylinderTag::drawAxis(const Mat& img, vector<MarkerInfo> markers, vector<Mo
 		arrowedLine(imgMark, imagePoints[imagePoints.size() - 5], imagePoints[imagePoints.size() - 2], Scalar(0, 0, 255), 3);
 		circle(imgMark, imagePoints[imagePoints.size() - 5], 8, Scalar(247, 235, 235), -1);
 		
-		circle(imgMark, imagePoints[imagePoints.size() - 1], 7, Scalar(120, 120, 32), -1);
+		circle(imgMark, imagePoints[imagePoints.size() - 1], 2, Scalar(120, 120, 32), -1);
 
 		float reprojection_error = 0;
 		for (int i = 0; i < imagePoints.size() - 5; i++) {
