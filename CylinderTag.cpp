@@ -82,7 +82,6 @@ void CylinderTag::detect(const Mat& img, vector<MarkerInfo>& markers_info, int a
 
 	Mat img_resize, img_float;
     resize(img, img_resize, Size(img.cols / 2, img.rows / 2), 0.5, 0.5, INTER_CUBIC);
-	cout << img_resize.type() << " " << img_resize.channels() << endl;
     img_resize.convertTo(img_resize, CV_32FC1, 1.0 / 255);
 
     Mat img_binary(img_resize.rows, img_resize.cols, CV_8UC1);
@@ -108,18 +107,8 @@ void CylinderTag::detect(const Mat& img, vector<MarkerInfo>& markers_info, int a
 		img.convertTo(img_float, CV_32FC1, 1.0 / 255);
 		detector.edgeRefine(img_float, features, features, cornerSubPixDist);
 	}
-		
-	detector.markerOrganization(features, markers);
-
-	detector.markerDecoder(markers, markers, this->state, this->featureSize);
-	markers_info = markers;
-
-	//meter.stop();
-	//duration[0] = meter.getTimeMilli();
-
-	//Plot
-	/* 
-	for (int i = 0; i < features.size(); i++){
+	
+	for (int i = 0; i < features.size(); i++) {
 		line(imgMark, features[i].corners[0], features[i].corners[1], Scalar(0, 255, 255), 2.5);
 		line(imgMark, features[i].corners[1], features[i].corners[2], Scalar(0, 255, 255), 2.5);
 		line(imgMark, features[i].corners[2], features[i].corners[7], Scalar(0, 255, 255), 2.5);
@@ -135,8 +124,18 @@ void CylinderTag::detect(const Mat& img, vector<MarkerInfo>& markers_info, int a
 		putText(imgMark, oss.str(), features[i].feature_center, FONT_ITALIC, 0.6, Scalar(250, 250, 250), 2);
 	}
 	imshow("Feature Organization", imgMark);
-	waitKey(1);*/
-	
+	waitKey(1);
+			
+	detector.markerOrganization(features, markers);
+
+	detector.markerDecoder(markers, markers, this->state, this->featureSize);
+	markers_info = markers;
+
+	//meter.stop();
+	//duration[0] = meter.getTimeMilli();
+
+	//Plot
+	/*
 	imgMark = img.clone();
 	cvtColor(img, imgMark, COLOR_GRAY2RGB);
 	for (int i = 0; i < markers.size(); i++) {
@@ -163,7 +162,7 @@ void CylinderTag::detect(const Mat& img, vector<MarkerInfo>& markers_info, int a
 		}
 	}
 	imshow("Output", imgMark);
-	waitKey(1);
+	waitKey(1);*/
 	
 	//cout << duration[0] << " " << duration[1] << " " << duration[2] << " " << duration[3] << " " << duration[4] << " " << duration[5] << " " << duration[6] << " " << duration[7] << endl;
 	//double ttime = duration[0] + duration[1] + duration[2] + duration[3] + duration[4] + duration[5] + duration[6] + duration[7];
@@ -241,20 +240,24 @@ void CylinderTag::drawAxis(const Mat& img, vector<MarkerInfo> markers, vector<Mo
 		model_points.push_back(reconstruct_model[ID].base + reconstruct_model[ID].axis * axisLength);
 		model_points.push_back(reconstruct_model[ID].base + Point3f(0.0372, 0.0372, 0.9986) * axisLength);
 		model_points.push_back(reconstruct_model[ID].base + Point3f(0.9980, -0.0520, -0.0353) * axisLength);
+		
+		model_points.push_back(Point3f(0, 80, 297));
 
 		imagePoints.clear();
 		projectPoints(model_points, pose[i].rvec, pose[i].tvec, camera.Intrinsic, camera.distCoeffs, imagePoints);
-		for (int i = 0; i < imagePoints.size() - 4; i++) {
+		for (int i = 0; i < imagePoints.size() - 5; i++) {
 			circle(imgMark, imagePoints[i], 5, Scalar(255, 234, 32), -1);
 		}
 
-		arrowedLine(imgMark, imagePoints[imagePoints.size() - 4], imagePoints[imagePoints.size() - 3], Scalar(255, 0, 0), 3);
-		arrowedLine(imgMark, imagePoints[imagePoints.size() - 4], imagePoints[imagePoints.size() - 2], Scalar(0, 255, 0), 3);
-		arrowedLine(imgMark, imagePoints[imagePoints.size() - 4], imagePoints[imagePoints.size() - 1], Scalar(0, 0, 255), 3);
-		circle(imgMark, imagePoints[imagePoints.size() - 4], 8, Scalar(247, 235, 235), -1);
+		arrowedLine(imgMark, imagePoints[imagePoints.size() - 5], imagePoints[imagePoints.size() - 4], Scalar(255, 0, 0), 3);
+		arrowedLine(imgMark, imagePoints[imagePoints.size() - 5], imagePoints[imagePoints.size() - 3], Scalar(0, 255, 0), 3);
+		arrowedLine(imgMark, imagePoints[imagePoints.size() - 5], imagePoints[imagePoints.size() - 2], Scalar(0, 0, 255), 3);
+		circle(imgMark, imagePoints[imagePoints.size() - 5], 8, Scalar(247, 235, 235), -1);
+		
+		circle(imgMark, imagePoints[imagePoints.size() - 1], 7, Scalar(120, 120, 32), -1);
 
 		float reprojection_error = 0;
-		for (int i = 0; i < imagePoints.size() - 4; i++) {
+		for (int i = 0; i < imagePoints.size() - 5; i++) {
 			reprojection_error += sqrt((imagePoints[i].x - image_points[i].x) * (imagePoints[i].x - image_points[i].x) + (imagePoints[i].y - image_points[i].y) * (imagePoints[i].y - image_points[i].y));
 		}
 		cout << "PnP RPE: " << reprojection_error / (imagePoints.size() - 4) << endl;

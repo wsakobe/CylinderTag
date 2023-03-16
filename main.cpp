@@ -33,13 +33,13 @@ int main(int argc, char** argv){
 	
 	//Reconstruction
 	/*
-	for (int i = 1; i <= 20; i++) {
-		string filepath = "F:/CylinderTag/Experiment/Pose_experiments/Reconstruction/CylinderTag/l/ (";
+	for (int i = 1; i <= 18; i++) {
+		string filepath = "F:/CylinderTag/CylinderTag/Recon/coil/r/ (";
 		filepath = filepath + to_string(i) + ").bmp";
 		read_from_image(filepath, i);
 	}*/
 	
-	//read_from_image("F:/CylinderTag/Experiment/ArUco/aruco-markers-master/pose_estimation/src/test.bmp", 1);
+	//read_from_image("F:/CylinderTag/CylinderTag/test.bmp", 1);
 	//read_from_video("F:/CylinderTag/Experiment/detection_rate_with_angle/det_90.avi"); 
 	read_online();
 
@@ -69,7 +69,7 @@ void read_from_image(const string& path, int num){
 	//marker.drawAxis(img_gray, markers, marker_model, pose, camera, 8);
 	
 	//Output
-	string fname = "F:/CylinderTag/Experiment/Pose_experiments/Reconstruction/CylinderTag/l/";
+	string fname = "F:/CylinderTag/CylinderTag/Recon/coil/r/";
 	fname = fname + to_string(num) + ".txt";
 	ofstream Files;
 	Files.open(fname, ios::ate);
@@ -80,7 +80,7 @@ void read_from_image(const string& path, int num){
 			for (int k = 4; k < 6; k++)
 				Files << markers[i].featurePos[j] * 8 + k << " " << markers[i].cornerLists[j][k].x << " " << markers[i].cornerLists[j][k].y << endl;
 			cout << markers[i].feature_ID_right[j] << endl;
-			if (abs(markers[i].feature_ID_left[j] - markers[i].feature_ID_right[j]) < 3 && markers[i].feature_ID_right[j] != -1) {
+			if (abs(markers[i].feature_ID_left[j] - markers[i].feature_ID_right[j]) < 4 && markers[i].feature_ID_right[j] != -1) {
 				for (int k = 2; k < 4; k++)
 					Files << markers[i].featurePos[j] * 8 + k << " " << markers[i].cornerLists[j][k].x << " " << markers[i].cornerLists[j][k].y << endl;
 				for (int k = 6; k < 8; k++)
@@ -88,7 +88,6 @@ void read_from_image(const string& path, int num){
 			}
 		}
 	}
-
 }
 
 void read_from_video(const string& path){
@@ -166,19 +165,59 @@ void read_online() {
 	CylinderTag marker("CTag_2f12c.marker");
 	marker.loadModel("CTag_2f12c.model", marker_model);
 	marker.loadCamera("cameraParams.yml", camera);
-
-	while (waitKey(30) != 27) {
+	
+	int t = 100;
+	char fname[256];
+	ofstream Files;
+	
+	while (t--) {
 		nRet[0] = MV_CC_GetImageBuffer(handle[0], &stImageInfo[0], 50);
 		if (nRet[0] == MV_OK)
 		{
 			frame = Convert2Mat(stImageInfo[0]);
+			imwrite("./photo/1.bmp", frame);
+			if (frame.channels() == 3) {
+				cvtColor(frame, frame, COLOR_BGR2GRAY);
+			}
 			marker.detect(frame, markers, 5, true, 5);
+			marker.estimatePose(frame, markers, marker_model, camera, pose, false);
+			marker.drawAxis(frame, markers, marker_model, pose, camera, 8);
+			
+			if (!pose.empty()) {
+				Mat rvec, tvec, R;
+				rvec = pose[0].rvec;
+				tvec = pose[0].tvec;
+				rvec.convertTo(rvec, CV_32FC1);
+				tvec.convertTo(tvec, CV_32FC1);
+
+				//output 
+				sprintf(fname, "./photo/rot.txt");
+				Files.open(fname, ios::app);
+				Files << format(rvec, cv::Formatter::FMT_CSV) << endl;
+				Files.close();
+
+				sprintf(fname, "./photo/trans.txt");
+				Files.open(fname, ios::app);
+				Files << format(tvec, cv::Formatter::FMT_CSV) << endl;
+				Files.close();
+								
+				Rodrigues(rvec, R);
+				Mat end_effector(3, 1, CV_32FC1);
+				end_effector.at<float>(0, 0) = 0;
+				end_effector.at<float>(1, 0) = 80;
+				end_effector.at<float>(2, 0) = 297;
+				sprintf(fname, "./photo/end.txt");
+				Files.open(fname, ios::app);
+				Files << format(R * end_effector + tvec, cv::Formatter::FMT_CSV) << endl;
+				Files.close();
+			}			
 		}
 		nRet[0] = MV_CC_FreeImageBuffer(handle[0], &stImageInfo[0]);
 		if (nRet[0] != MV_OK)
 		{
 			printf("Free Image Buffer fail! nRet [0x%x]\n", nRet[0]);
 		}
+		waitKey(20);
 	}
 
 	for (int i = 0; i < stDeviceList.nDeviceNum; i++) {

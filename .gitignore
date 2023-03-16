@@ -10,6 +10,7 @@
 *.userosscache
 *.sln.docstates
 *.dll
+*.props
 
 # User-specific files (MonoDevelop/Xamarin Studio)
 *.userprefs
@@ -369,3 +370,5 @@ FodyWeavers.xsd
 /Recon
 /xyzRefinedPoints.mat
 /Calib
+/photo
+*.bmp
