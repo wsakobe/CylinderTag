@@ -109,8 +109,6 @@ void read_from_video(const string& path){
 	Files.close();
 	*/
 	int TP = 0, P_ALL = 0, FN = 0;
-	for (int i = 0; i < 0; i++)
-		capture.read(frame);
 	while (capture.read(frame))
 	{		
 		TickMeter meter;
