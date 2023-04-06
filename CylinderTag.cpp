@@ -69,11 +69,6 @@ void CylinderTag::detect(const Mat& img, vector<MarkerInfo>& markers_info, int a
     Mat imgMark(img.rows, img.cols, CV_32FC3);
     cvtColor(img, imgMark, COLOR_GRAY2RGB);
 
-	//time record
-    /*double duration[10]; 
-	TickMeter meter;
-	meter.start();*/
-	    
 	//Refresh
 	quadAreas_labeled.clear();
 	corners.clear();
@@ -86,7 +81,6 @@ void CylinderTag::detect(const Mat& img, vector<MarkerInfo>& markers_info, int a
 
     Mat img_binary(img_resize.rows, img_resize.cols, CV_8UC1);
     detector.adaptiveThreshold(img_resize, img_binary, adaptiveThresh);
-	
 	detector.connectedComponentLabeling(img_binary, quadAreas_labeled);
 
     detector.edgeExtraction(img_resize, quadAreas_labeled, corners);
@@ -125,29 +119,33 @@ void CylinderTag::detect(const Mat& img, vector<MarkerInfo>& markers_info, int a
 	}
 	imshow("Feature Organization", imgMark);
 	waitKey(1);
-			
+	
 	detector.markerOrganization(features, markers);
 
 	detector.markerDecoder(markers, markers, this->state, this->featureSize);
 	markers_info = markers;
 
-	//meter.stop();
-	//duration[0] = meter.getTimeMilli();
-
 	//Plot
 	/*
+	vector<cv::Vec3b> colors(5);
+	colors[0] = cv::Vec3b(255, 31, 91);
+	colors[1] = cv::Vec3b(0, 154, 222);
+	colors[2] = cv::Vec3b(175, 88, 186);
+	colors[3] = cv::Vec3b(255, 198, 30);
+	colors[4] = cv::Vec3b(0, 205, 108);
+
 	imgMark = img.clone();
 	cvtColor(img, imgMark, COLOR_GRAY2RGB);
 	for (int i = 0; i < markers.size(); i++) {
 		for (int j = 0; j < markers[i].cornerLists.size(); j++) {
-			line(imgMark, markers[i].cornerLists[j][0], markers[i].cornerLists[j][1], Scalar(0, 255, 255), 2.5);
-			line(imgMark, markers[i].cornerLists[j][1], markers[i].cornerLists[j][2], Scalar(0, 255, 255), 2.5);
-			line(imgMark, markers[i].cornerLists[j][2], markers[i].cornerLists[j][7], Scalar(0, 255, 255), 2.5);
-			line(imgMark, markers[i].cornerLists[j][7], markers[i].cornerLists[j][4], Scalar(0, 255, 255), 2.5);
-			line(imgMark, markers[i].cornerLists[j][4], markers[i].cornerLists[j][5], Scalar(0, 255, 255), 2.5);
-			line(imgMark, markers[i].cornerLists[j][5], markers[i].cornerLists[j][6], Scalar(0, 255, 255), 2.5);
-			line(imgMark, markers[i].cornerLists[j][6], markers[i].cornerLists[j][3], Scalar(0, 255, 255), 2.5);
-			line(imgMark, markers[i].cornerLists[j][3], markers[i].cornerLists[j][0], Scalar(0, 255, 255), 2.5);
+			line(imgMark, markers[i].cornerLists[j][0], markers[i].cornerLists[j][1], Scalar(colors[i]), 3.5);
+			line(imgMark, markers[i].cornerLists[j][1], markers[i].cornerLists[j][2], Scalar(colors[i]), 3.5);
+			line(imgMark, markers[i].cornerLists[j][2], markers[i].cornerLists[j][7], Scalar(colors[i]), 3.5);
+			line(imgMark, markers[i].cornerLists[j][7], markers[i].cornerLists[j][4], Scalar(colors[i]), 3.5);
+			line(imgMark, markers[i].cornerLists[j][4], markers[i].cornerLists[j][5], Scalar(colors[i]), 3.5);
+			line(imgMark, markers[i].cornerLists[j][5], markers[i].cornerLists[j][6], Scalar(colors[i]), 3.5);
+			line(imgMark, markers[i].cornerLists[j][6], markers[i].cornerLists[j][3], Scalar(colors[i]), 3.5);
+			line(imgMark, markers[i].cornerLists[j][3], markers[i].cornerLists[j][0], Scalar(colors[i]), 3.5);
 			for (int k = 0; k < 8; k++)
 				circle(imgMark, markers[i].cornerLists[j][k], 3, Scalar(107, 90, 219), -1);
 			ostringstream oss;
@@ -163,10 +161,6 @@ void CylinderTag::detect(const Mat& img, vector<MarkerInfo>& markers_info, int a
 	}
 	imshow("Output", imgMark);
 	waitKey(1);*/
-	
-	//cout << duration[0] << " " << duration[1] << " " << duration[2] << " " << duration[3] << " " << duration[4] << " " << duration[5] << " " << duration[6] << " " << duration[7] << endl;
-	//double ttime = duration[0] + duration[1] + duration[2] + duration[3] + duration[4] + duration[5] + duration[6] + duration[7];
-	//cout << "Total time: " << duration[0] << endl;
 }
 
 void CylinderTag::loadModel(const string& path, vector<ModelInfo>& reconstruct_model){
@@ -249,12 +243,12 @@ void CylinderTag::drawAxis(const Mat& img, vector<MarkerInfo> markers, vector<Mo
 			circle(imgMark, imagePoints[i], 5, Scalar(255, 234, 32), -1);
 		}
 
-		arrowedLine(imgMark, imagePoints[imagePoints.size() - 5], imagePoints[imagePoints.size() - 4], Scalar(255, 0, 0), 3);
-		arrowedLine(imgMark, imagePoints[imagePoints.size() - 5], imagePoints[imagePoints.size() - 3], Scalar(0, 255, 0), 3);
-		arrowedLine(imgMark, imagePoints[imagePoints.size() - 5], imagePoints[imagePoints.size() - 2], Scalar(0, 0, 255), 3);
+		arrowedLine(imgMark, imagePoints[imagePoints.size() - 5], imagePoints[imagePoints.size() - 4], Scalar(255, 0, 0), 15, LINE_AA, 0, 0.2);
+		arrowedLine(imgMark, imagePoints[imagePoints.size() - 5], imagePoints[imagePoints.size() - 3], Scalar(0, 255, 0), 15, LINE_AA, 0, 0.2);
+		arrowedLine(imgMark, imagePoints[imagePoints.size() - 5], imagePoints[imagePoints.size() - 2], Scalar(0, 0, 255), 15, LINE_AA, 0, 0.2);
 		circle(imgMark, imagePoints[imagePoints.size() - 5], 8, Scalar(247, 235, 235), -1);
 		
-		circle(imgMark, imagePoints[imagePoints.size() - 1], 2, Scalar(120, 120, 32), -1);
+		//circle(imgMark, imagePoints[imagePoints.size() - 1], 2, Scalar(120, 120, 32), -1);
 
 		float reprojection_error = 0;
 		for (int i = 0; i < imagePoints.size() - 5; i++) {

@@ -98,7 +98,7 @@ private:
     vector<float> dist2center, dist2line;
     int init, cnt_boundary;
     float normal_line[2];
-    float d_line, dist_expand, threshold_line = 1.8, threshold_expand = 1.5, cost;
+    float d_line, dist_expand, threshold_line = 1.8, threshold_expand = 1.2, cost;
     Point2f area_center;
     vector<int> span, span_temp;
     vector<int> b;

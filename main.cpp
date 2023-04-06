@@ -33,17 +33,19 @@ int main(int argc, char** argv){
 	
 	//Reconstruction
 	/*
-	for (int i = 1; i <= 18; i++) {
+	for (int i = 1; i <= 20; i++) {
 		string filepath = "F:/CylinderTag/CylinderTag/Recon/coil/r/ (";
 		filepath = filepath + to_string(i) + ").bmp";
 		read_from_image(filepath, i);
 	}*/
 	
-	//read_from_image("F:/CylinderTag/CylinderTag/test.bmp", 1);
-	//read_from_video("F:/CylinderTag/Experiment/detection_rate_with_angle/det_90.avi"); 
-	read_online();
+	read_from_image("F:/CylinderTag/CylinderTag/Data/extension.bmp", 1);
+	//read_from_video("F:/CylinderTag/CylinderTag/Data/dp4.avi"); 
+	//read_online();
 
+	destroyAllWindows();
 	system("Pause");
+
 	return 0;
 }
 
@@ -65,10 +67,11 @@ void read_from_image(const string& path, int num){
 		cout << "No tag detected" << endl;
 		cnt++;
 	}
-	//marker.estimatePose(img_gray, markers, marker_model, camera, pose, false);
-	//marker.drawAxis(img_gray, markers, marker_model, pose, camera, 8);
+	marker.estimatePose(img_gray, markers, marker_model, camera, pose, false);
+	marker.drawAxis(img_gray, markers, marker_model, pose, camera, 35);
 	
 	//Output
+	/*
 	string fname = "F:/CylinderTag/CylinderTag/Recon/coil/r/";
 	fname = fname + to_string(num) + ".txt";
 	ofstream Files;
@@ -87,7 +90,7 @@ void read_from_image(const string& path, int num){
 					Files << markers[i].featurePos[j] * 8 + k << " " << markers[i].cornerLists[j][k].x << " " << markers[i].cornerLists[j][k].y << endl;
 			}
 		}
-	}
+	}*/
 }
 
 void read_from_video(const string& path){
@@ -97,62 +100,52 @@ void read_from_video(const string& path){
 	CylinderTag marker("CTag_2f12c.marker");
 	marker.loadModel("CTag_2f12c.model", marker_model);
 	marker.loadCamera("cameraParams.yml", camera);
-	/*
+	
 	char fname[256];
-	sprintf(fname, "F:/CylinderTag/Experiment/detection_rate_with_angle/pose_inform/yaw/Rot/-90.txt");
 	ofstream Files;
-	Files.open(fname, ios::out | ios::trunc);
-	Files.close();
 
-	sprintf(fname, "F:/CylinderTag/Experiment/detection_rate_with_angle/pose_inform/yaw/Trans/-90.txt");
-	Files.open(fname, ios::out | ios::trunc);
-	Files.close();
-	*/
-	int TP = 0, P_ALL = 0, FN = 0;
 	while (capture.read(frame))
 	{		
-		TickMeter meter;
-		meter.start();
 		cvtColor(frame, img_gray, COLOR_BGR2GRAY);
 		markers.clear();
 		pose.clear();
 		marker.detect(img_gray, markers, 5, true, 5);
-		meter.stop();
-		cout << std::fixed << std::setprecision(3) << meter.getTimeSec() * 1000 << endl;
 		for (int i = 0; i < markers.size(); i++) {
-			//cout << "ID " << i << ": " << markers[i].markerID + 1 << endl;
-			if (markers[i].markerID == 21) {
-				TP++;
-			}
-			else {
-				FN++;
-			}
+			cout << "ID " << i << ": " << markers[i].markerID + 1 << endl;
 		}
 		
-		//cout << TP << "/" << ++P_ALL << endl;
-		/*
 		marker.estimatePose(img_gray, markers, marker_model, camera, pose, false);
+		marker.drawAxis(img_gray, markers, marker_model, pose, camera, 20);
 		if (!pose.empty()) {
-			marker.drawAxis(img_gray, markers, marker_model, pose, camera, 8);
-			//cout << pose[0].rvec << endl << pose[0].tvec << endl << endl;
-			
-			Mat R;
-			Rodrigues(pose[0].rvec, R);
+			Mat rvec, tvec, R;
+			rvec = pose[0].rvec;
+			tvec = pose[0].tvec;
+			rvec.convertTo(rvec, CV_32FC1);
+			tvec.convertTo(tvec, CV_32FC1);
+			Rodrigues(rvec, R);
 
 			//output 
-			sprintf(fname, "F:/CylinderTag/Experiment/detection_rate_with_angle/pose_inform/yaw/Rot/-90.txt");
+			sprintf(fname, "./photo/rot.txt");
 			Files.open(fname, ios::app);
 			Files << format(R, cv::Formatter::FMT_CSV) << endl;
 			Files.close();
 
-			sprintf(fname, "F:/CylinderTag/Experiment/detection_rate_with_angle/pose_inform/yaw/Trans/-90.txt");
+			sprintf(fname, "./photo/trans.txt");
 			Files.open(fname, ios::app);
-			Files << format(pose[0].tvec, cv::Formatter::FMT_CSV) << endl;
+			Files << format(tvec, cv::Formatter::FMT_CSV) << endl;
 			Files.close();
-		}*/
+
+			Mat end_effector(3, 1, CV_32FC1);
+			end_effector.at<float>(0, 0) = 1.0898;
+			end_effector.at<float>(1, 0) = 98.1998;
+			end_effector.at<float>(2, 0) = 319.2408;
+			sprintf(fname, "./photo/end.txt");
+			Files.open(fname, ios::app);
+			Files << format(R * end_effector + tvec, cv::Formatter::FMT_CSV) << endl;
+			Files.close();
+		}
 	}
-	std::cout << "Precision: " << (float)(TP * 1.0 / P_ALL) * 100 << "%" << std::endl;
-	std::cout << "Recall: " << (float)(1.0 * TP / (TP + FN)) * 100 << "%" << std::endl;
+
 	waitKey(0);
 	destroyAllWindows();
 }
@@ -164,7 +157,7 @@ void read_online() {
 	marker.loadModel("CTag_2f12c.model", marker_model);
 	marker.loadCamera("cameraParams.yml", camera);
 	
-	int t = 500;
+	int t = 300;
 	char fname[256];
 	ofstream Files;
 	
@@ -174,13 +167,13 @@ void read_online() {
 		if (nRet[0] == MV_OK)
 		{
 			frame = Convert2Mat(stImageInfo[0]);
-			imwrite("./photo/1.bmp", frame);
+			//imwrite("./photo/1.bmp", frame);
 			if (frame.channels() == 3) {
 				cvtColor(frame, frame, COLOR_BGR2GRAY);
 			}
 			marker.detect(frame, markers, 5, true, 5);
 			marker.estimatePose(frame, markers, marker_model, camera, pose, false);
-			marker.drawAxis(frame, markers, marker_model, pose, camera, 8);
+			marker.drawAxis(frame, markers, marker_model, pose, camera, 20);
 			
 			if (!pose.empty()) {
 				Mat rvec, tvec, R;
@@ -209,7 +202,7 @@ void read_online() {
 				Files.open(fname, ios::app);
 				Files << format(R * end_effector + tvec, cv::Formatter::FMT_CSV) << endl;
 				Files.close();
-			}			
+			}
 		}
 		nRet[0] = MV_CC_FreeImageBuffer(handle[0], &stImageInfo[0]);
 		if (nRet[0] != MV_OK)

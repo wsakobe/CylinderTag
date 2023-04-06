@@ -126,7 +126,7 @@ void corner_detector::connectedComponentLabeling(const Mat& src, vector<vector<P
     //            colors[i] = cv::Vec3b(0,0,0); // small regions are painted with black too.
     //}
     ////按照label值，对不同的连通域进行着色
-    //Mat img_color = cv::Mat::zeros(src.size(), CV_32FC3);
+    //Mat img_color(src.rows, src.cols, CV_32FC3);
     //cvtColor(src, img_color, COLOR_GRAY2RGB);
     //for( int y = 0; y < img_color.rows; y++ )
     //    for( int x = 0; x < img_color.cols; x++ )
@@ -404,16 +404,16 @@ void corner_detector::edgeExtraction(const Mat& img, vector<vector<Point>>& quad
         }
         
         for (int k = 0; k < edge_point_cluster[0].size(); k++){
-            circle(imgMark, edge_point_cluster[0][k], 0.5, Scalar(0, 250, 0), -1);
+            circle(imgMark, edge_point_cluster[0][k], 2, Scalar(0, 250, 0), -1);
         }
         for (int k = 0; k < edge_point_cluster[1].size(); k++){
-            circle(imgMark, edge_point_cluster[1][k], 0.5, Scalar(250, 0, 0), -1);
+            circle(imgMark, edge_point_cluster[1][k], 2, Scalar(250, 0, 0), -1);
         }
         for (int k = 0; k < edge_point_cluster[2].size(); k++){
-            circle(imgMark, edge_point_cluster[2][k], 0.5, Scalar(0, 0, 250), -1);
+            circle(imgMark, edge_point_cluster[2][k], 2, Scalar(0, 0, 250), -1);
         }
         for (int k = 0; k < edge_point_cluster[3].size(); k++){
-            circle(imgMark, edge_point_cluster[3][k], 0.5, Scalar(0, 120, 100), -1);
+            circle(imgMark, edge_point_cluster[3][k], 2, Scalar(0, 120, 100), -1);
         }
         
         if (flag_line_number) continue;
@@ -462,13 +462,13 @@ void corner_detector::edgeExtraction(const Mat& img, vector<vector<Point>>& quad
         
         ostringstream oss;
         oss << corners_init.size() - 1;
-        putText(imgMark, oss.str(), corners_pass[0], FONT_ITALIC, 0.6, Scalar(20, 200, 255), 1);
+        //putText(imgMark, oss.str(), corners_pass[0], FONT_ITALIC, 0.6, Scalar(20, 200, 255), 1);
         for (int j = 0; j < corners_pass.size(); j++){
             circle(imgMark, corners_pass[j], 2, Scalar(120, 150, 0), -1);
         }
     }     
     //imshow("corners initial", imgMark);
-    //waitKey(1);
+    //waitKey(0);
 }
 
 void corner_detector::get_orientedEdgePoints(Mat& visited, Point starter, int count)
@@ -611,7 +611,7 @@ void corner_detector::featureRecovery(vector<vector<Point2f>>& corners_refined, 
                     && (abs(edge_angle1 - edge_angle2) < threshold_angle * 10 || abs(abs(edge_angle1 - edge_angle2) - 180) < threshold_angle * 10 || abs(abs(edge_angle1 - edge_angle2) - 360) < threshold_angle * 10)
                     && (abs(dist1_short - dist2_short) < min(dist1_short, dist2_short) * 0.33)
                     && ((dist1_long + dist2_long) > (dist1_short + dist2_short))
-                    && ((dist1_long + dist2_long) < 15 * (dist1_short + dist2_short))
+                    && ((dist1_long + dist2_long) < 150 * (dist1_short + dist2_short))
                     && (feature_length - (dist1_long + dist2_long) / 2 < 0.3 * (feature_length + (dist1_long + dist2_long) / 2)))
                 {
                     isVisited[i] = true;
@@ -1350,10 +1350,10 @@ void corner_detector::edgeSubPix(const Mat& src, vector<featureInfo>& features, 
 void corner_detector::edgeRefine(const Mat& src, vector<featureInfo>& features, vector<featureInfo>& features_refined, int subPixWindow)
 {
     for (int i = 0; i < features.size(); i++) {
-        double lines_next[4][4], lines_last[4][4]; // for each line, [Ex Ey nx ny]
+        double lines_next[4][4], lines_last[4][4];
 
         for (int edge = 0; edge < 4; edge++) {
-            int a = edge, b = (edge + 1) & 3; // indices of the end points.
+            int a = edge, b = (edge + 1) & 3;
 
             // compute the normal to the current line estimate
             double nx = features[i].corners[b].y - features[i].corners[a].y;
@@ -1362,38 +1362,19 @@ void corner_detector::edgeRefine(const Mat& src, vector<featureInfo>& features, 
             nx /= mag;
             ny /= mag;
 
-            // we will now fit a NEW line by sampling points near
-            // our original line that have large gradients. On really big tags,
-            // we're willing to sample more to get an even better estimate.
-            int nsamples = max(128, mag / 8); // XXX tunable
-
-            // stats for fitting a line...
+            int nsamples = max(128, mag / 8);
             double Mx = 0, My = 0, Mxx = 0, Mxy = 0, Myy = 0, N = 0;
 
             for (int s = 0; s < nsamples * 1; s++) {
-                // compute a point along the line... Note, we're avoiding
-                // sampling *right* at the corners, since those points are
-                // the least reliable.
                 double alpha = (15.0 + s) / (nsamples + 30);
                 double x0 = alpha * features[i].corners[a].x + (1 - alpha) * features[i].corners[b].x;
                 double y0 = alpha * features[i].corners[a].y + (1 - alpha) * features[i].corners[b].y;
 
-                // search along the normal to this line, looking at the
-                // gradients along the way. We're looking for a strong
-                // response.
                 double Mn = 0;
                 double Mcount = 0;
                 double range = subPixWindow;
 
                 for (double n = -range; n <= range; n += 0.25) {
-                    // Because of the guaranteed winding order of the
-                    // points in the quad, we will start inside the white
-                    // portion of the quad and work our way outward.
-                    //
-                    // sample to points (x1,y1) and (x2,y2) XXX tunable:
-                    // how far +/- to look? Small values compute the
-                    // gradient more precisely, but are more sensitive to
-                    // noise.
                     double grange = 1;
                     int x1 = x0 + (n + grange) * nx;
                     int y1 = y0 + (n + grange) * ny;
@@ -1408,27 +1389,23 @@ void corner_detector::edgeRefine(const Mat& src, vector<featureInfo>& features, 
                     float g1 = src.at<float>(y1, x1);
                     float g2 = src.at<float>(y2, x2);
 
-                    if (g1 < g2) // reject points whose gradient is "backwards". They can only hurt us.
+                    if (g1 < g2)
                         continue;
 
-                    double weight = (g2 - g1) * (g2 - g1); // XXX tunable. What shape for weight=f(g2-g1)?
+                    double weight = (g2 - g1) * (g2 - g1); 
 
-                    // compute weighted average of the gradient at this point.
                     Mn += weight * n;
                     Mcount += weight;
                 }
 
-                // what was the average point along the line?
                 if (Mcount == 0)
                     continue;
 
                 double n0 = Mn / Mcount;
 
-                // where is the point along the line?
                 double bestx = x0 + n0 * nx;
                 double besty = y0 + n0 * ny;
 
-                // update our line fit statistics
                 Mx += bestx * (1 - alpha);
                 My += besty * (1 - alpha);
                 Mxx += bestx * bestx * (1 - alpha);
@@ -1437,13 +1414,11 @@ void corner_detector::edgeRefine(const Mat& src, vector<featureInfo>& features, 
                 N += (1 - alpha);
             }
 
-            // fit a line
             double Ex = Mx / N, Ey = My / N;
             double Cxx = Mxx / N - Ex * Ex;
             double Cxy = Mxy / N - Ex * Ey;
             double Cyy = Myy / N - Ey * Ey;
 
-            // TODO: Can replace this with same code as in fit_line.
             double normal_theta = .5 * atan2f(-2 * Cxy, (Cyy - Cxx));
             nx = cosf(normal_theta);
             ny = sinf(normal_theta);
@@ -1454,47 +1429,27 @@ void corner_detector::edgeRefine(const Mat& src, vector<featureInfo>& features, 
         }
 
         for (int edge = 0; edge < 4; edge++) {
-            int a = edge, b = (edge + 1) & 3; // indices of the end points.
+            int a = edge, b = (edge + 1) & 3;
 
-            // compute the normal to the current line estimate
             double nx = features[i].corners[b].y - features[i].corners[a].y;
             double ny = -features[i].corners[b].x + features[i].corners[a].x;
             double mag = sqrt(nx * nx + ny * ny);
             nx /= mag;
             ny /= mag;
 
-            // we will now fit a NEW line by sampling points near
-            // our original line that have large gradients. On really big tags,
-            // we're willing to sample more to get an even better estimate.
-            int nsamples = max(128, mag / 8); // XXX tunable
-
-            // stats for fitting a line...
+            int nsamples = max(128, mag / 8); 
             double Mx = 0, My = 0, Mxx = 0, Mxy = 0, Myy = 0, N = 0;
 
             for (int s = nsamples * 0; s < nsamples * 1; s++) {
-                // compute a point along the line... Note, we're avoiding
-                // sampling *right* at the corners, since those points are
-                // the least reliable.
                 double alpha = (15.0 + s) / (nsamples + 30);
                 double x0 = alpha * features[i].corners[a].x + (1 - alpha) * features[i].corners[b].x;
                 double y0 = alpha * features[i].corners[a].y + (1 - alpha) * features[i].corners[b].y;
 
-                // search along the normal to this line, looking at the
-                // gradients along the way. We're looking for a strong
-                // response.
                 double Mn = 0;
                 double Mcount = 0;
                 double range = subPixWindow;
 
                 for (double n = -range; n <= range; n += 0.25) {
-                    // Because of the guaranteed winding order of the
-                    // points in the quad, we will start inside the white
-                    // portion of the quad and work our way outward.
-                    //
-                    // sample to points (x1,y1) and (x2,y2) XXX tunable:
-                    // how far +/- to look? Small values compute the
-                    // gradient more precisely, but are more sensitive to
-                    // noise.
                     double grange = 1;
                     int x1 = x0 + (n + grange) * nx;
                     int y1 = y0 + (n + grange) * ny;
@@ -1509,27 +1464,23 @@ void corner_detector::edgeRefine(const Mat& src, vector<featureInfo>& features, 
                     float g1 = src.at<float>(y1, x1);
                     float g2 = src.at<float>(y2, x2);
 
-                    if (g1 < g2) // reject points whose gradient is "backwards". They can only hurt us.
+                    if (g1 < g2) 
                         continue;
 
-                    double weight = (g2 - g1) * (g2 - g1); // XXX tunable. What shape for weight=f(g2-g1)?
+                    double weight = (g2 - g1) * (g2 - g1);
 
-                    // compute weighted average of the gradient at this point.
                     Mn += weight * n;
                     Mcount += weight;
                 }
 
-                // what was the average point along the line?
                 if (Mcount == 0)
                     continue;
 
                 double n0 = Mn / Mcount;
 
-                // where is the point along the line?
                 double bestx = x0 + n0 * nx;
                 double besty = y0 + n0 * ny;
 
-                // update our line fit statistics
                 Mx += bestx * alpha;
                 My += besty * alpha;
                 Mxx += bestx * bestx * alpha;
@@ -1544,7 +1495,6 @@ void corner_detector::edgeRefine(const Mat& src, vector<featureInfo>& features, 
             double Cxy = Mxy / N - Ex * Ey;
             double Cyy = Myy / N - Ey * Ey;
 
-            // TODO: Can replace this with same code as in fit_line.
             double normal_theta = .5 * atan2f(-2 * Cxy, (Cyy - Cxx));
             nx = cosf(normal_theta);
             ny = sinf(normal_theta);
@@ -1554,7 +1504,6 @@ void corner_detector::edgeRefine(const Mat& src, vector<featureInfo>& features, 
             lines_last[edge][3] = ny;
         }
 
-        // now refit the corners of the quad
         for (int it = 0; it < 4; it++) {
             double A00 = lines_next[it][3], A01 = -lines_last[(it + 1) & 3][3];
             double A10 = -lines_next[it][2], A11 = lines_last[(it + 1) & 3][2];
@@ -1568,7 +1517,6 @@ void corner_detector::edgeRefine(const Mat& src, vector<featureInfo>& features, 
             double dist_old_new = distance_2points(features[i].corners[(it + 1) & 3], Point2f(lines_next[it][0] + L0 * A00, lines_next[it][1] + L0 * A10));
 
             if (fabs(det) > 0.001) {
-                // solve
                 features_refined[i].corners[(it + 1) & 3].x = lines_next[it][0] + L0 * A00;
                 features_refined[i].corners[(it + 1) & 3].y = lines_next[it][1] + L0 * A10;
             }
@@ -1578,57 +1526,28 @@ void corner_detector::edgeRefine(const Mat& src, vector<featureInfo>& features, 
         }
 
         for (int edge = 0; edge < 4; edge++) {
-            int a = edge + 4, b = (edge + 1) % 4 + 4; // indices of the end points.
+            int a = edge + 4, b = (edge + 1) % 4 + 4;
 
-            // compute the normal to the current line estimate
             double nx = features[i].corners[b].y - features[i].corners[a].y;
             double ny = -features[i].corners[b].x + features[i].corners[a].x;
             double mag = sqrt(nx * nx + ny * ny);
             nx /= mag;
             ny /= mag;
 
-            // we will now fit a NEW line by sampling points near
-            // our original line that have large gradients. On really big tags,
-            // we're willing to sample more to get an even better estimate.
-            int nsamples = max(128, mag / 8); // XXX tunable
-
-            // stats for fitting a line...
+            int nsamples = max(128, mag / 8);
             double Mx = 0, My = 0, Mxx = 0, Mxy = 0, Myy = 0, N = 0;
 
             for (int s = 0; s < nsamples * 1; s++) {
-                // compute a point along the line... Note, we're avoiding
-                // sampling *right* at the corners, since those points are
-                // the least reliable.
                 double alpha = (15.0 + s) / (nsamples + 30);
                 double x0 = alpha * features[i].corners[a].x + (1 - alpha) * features[i].corners[b].x;
                 double y0 = alpha * features[i].corners[a].y + (1 - alpha) * features[i].corners[b].y;
 
-                // search along the normal to this line, looking at the
-                // gradients along the way. We're looking for a strong
-                // response.
                 double Mn = 0;
                 double Mcount = 0;
 
-                // XXX tunable: how far to search?  We want to search far
-                // enough that we find the best edge, but not so far that
-                // we hit other edges that aren't part of the tag. We
-                // shouldn't ever have to search more than quad_decimate,
-                // since otherwise we would (ideally) have started our
-                // search on another pixel in the first place. Likewise,
-                // for very small tags, we don't want the range to be too
-                // big.
                 double range = subPixWindow;
 
-                // XXX tunable step size.
                 for (double n = -range; n <= range; n += 0.25) {
-                    // Because of the guaranteed winding order of the
-                    // points in the quad, we will start inside the white
-                    // portion of the quad and work our way outward.
-                    //
-                    // sample to points (x1,y1) and (x2,y2) XXX tunable:
-                    // how far +/- to look? Small values compute the
-                    // gradient more precisely, but are more sensitive to
-                    // noise.
                     double grange = 1;
                     int x1 = x0 + (n + grange) * nx;
                     int y1 = y0 + (n + grange) * ny;
@@ -1643,27 +1562,23 @@ void corner_detector::edgeRefine(const Mat& src, vector<featureInfo>& features, 
                     float g1 = src.at<float>(y1, x1);
                     float g2 = src.at<float>(y2, x2);
 
-                    if (g1 < g2) // reject points whose gradient is "backwards". They can only hurt us.
+                    if (g1 < g2) 
                         continue;
 
-                    double weight = (g2 - g1) * (g2 - g1); // XXX tunable. What shape for weight=f(g2-g1)?
+                    double weight = (g2 - g1) * (g2 - g1); 
 
-                    // compute weighted average of the gradient at this point.
                     Mn += weight * n;
                     Mcount += weight;
                 }
 
-                // what was the average point along the line?
                 if (Mcount == 0)
                     continue;
 
                 double n0 = Mn / Mcount;
 
-                // where is the point along the line?
                 double bestx = x0 + n0 * nx;
                 double besty = y0 + n0 * ny;
 
-                // update our line fit statistics
                 Mx += bestx * (1 - alpha);
                 My += besty * (1 - alpha);
                 Mxx += bestx * bestx * (1 - alpha);
@@ -1672,13 +1587,11 @@ void corner_detector::edgeRefine(const Mat& src, vector<featureInfo>& features, 
                 N += (1 - alpha);
             }
 
-            // fit a line
             double Ex = Mx / N, Ey = My / N;
             double Cxx = Mxx / N - Ex * Ex;
             double Cxy = Mxy / N - Ex * Ey;
             double Cyy = Myy / N - Ey * Ey;
 
-            // TODO: Can replace this with same code as in fit_line.
             double normal_theta = .5 * atan2f(-2 * Cxy, (Cyy - Cxx));
             nx = cosf(normal_theta);
             ny = sinf(normal_theta);
@@ -1689,57 +1602,28 @@ void corner_detector::edgeRefine(const Mat& src, vector<featureInfo>& features, 
         }
 
         for (int edge = 0; edge < 4; edge++) {
-            int a = edge + 4, b = (edge + 1) % 4 + 4; // indices of the end points.
+            int a = edge + 4, b = (edge + 1) % 4 + 4;
 
-            // compute the normal to the current line estimate
             double nx = features[i].corners[b].y - features[i].corners[a].y;
             double ny = -features[i].corners[b].x + features[i].corners[a].x;
             double mag = sqrt(nx * nx + ny * ny);
             nx /= mag;
             ny /= mag;
 
-            // we will now fit a NEW line by sampling points near
-            // our original line that have large gradients. On really big tags,
-            // we're willing to sample more to get an even better estimate.
-            int nsamples = max(128, mag / 8); // XXX tunable
-
-            // stats for fitting a line...
+            int nsamples = max(128, mag / 8);
             double Mx = 0, My = 0, Mxx = 0, Mxy = 0, Myy = 0, N = 0;
 
             for (int s = 0; s < nsamples * 1; s++) {
-                // compute a point along the line... Note, we're avoiding
-                // sampling *right* at the corners, since those points are
-                // the least reliable.
                 double alpha = (15.0 + s) / (nsamples + 30);
                 double x0 = alpha * features[i].corners[a].x + (1 - alpha) * features[i].corners[b].x;
                 double y0 = alpha * features[i].corners[a].y + (1 - alpha) * features[i].corners[b].y;
 
-                // search along the normal to this line, looking at the
-                // gradients along the way. We're looking for a strong
-                // response.
                 double Mn = 0;
                 double Mcount = 0;
 
-                // XXX tunable: how far to search?  We want to search far
-                // enough that we find the best edge, but not so far that
-                // we hit other edges that aren't part of the tag. We
-                // shouldn't ever have to search more than quad_decimate,
-                // since otherwise we would (ideally) have started our
-                // search on another pixel in the first place. Likewise,
-                // for very small tags, we don't want the range to be too
-                // big.
                 double range = subPixWindow;
 
-                // XXX tunable step size.
                 for (double n = -range; n <= range; n += 0.25) {
-                    // Because of the guaranteed winding order of the
-                    // points in the quad, we will start inside the white
-                    // portion of the quad and work our way outward.
-                    //
-                    // sample to points (x1,y1) and (x2,y2) XXX tunable:
-                    // how far +/- to look? Small values compute the
-                    // gradient more precisely, but are more sensitive to
-                    // noise.
                     double grange = 1;
                     int x1 = x0 + (n + grange) * nx;
                     int y1 = y0 + (n + grange) * ny;
@@ -1754,27 +1638,23 @@ void corner_detector::edgeRefine(const Mat& src, vector<featureInfo>& features, 
                     float g1 = src.at<float>(y1, x1);
                     float g2 = src.at<float>(y2, x2);
 
-                    if (g1 < g2) // reject points whose gradient is "backwards". They can only hurt us.
+                    if (g1 < g2) 
                         continue;
 
-                    double weight = (g2 - g1) * (g2 - g1); // XXX tunable. What shape for weight=f(g2-g1)?
+                    double weight = (g2 - g1) * (g2 - g1);
 
-                    // compute weighted average of the gradient at this point.
                     Mn += weight * n;
                     Mcount += weight;
                 }
 
-                // what was the average point along the line?
                 if (Mcount == 0)
                     continue;
 
                 double n0 = Mn / Mcount;
 
-                // where is the point along the line?
                 double bestx = x0 + n0 * nx;
                 double besty = y0 + n0 * ny;
 
-                // update our line fit statistics
                 Mx += bestx * alpha;
                 My += besty * alpha;
                 Mxx += bestx * bestx * alpha;
@@ -1783,13 +1663,11 @@ void corner_detector::edgeRefine(const Mat& src, vector<featureInfo>& features, 
                 N += alpha;
             }
 
-            // fit a line
             double Ex = Mx / N, Ey = My / N;
             double Cxx = Mxx / N - Ex * Ex;
             double Cxy = Mxy / N - Ex * Ey;
             double Cyy = Myy / N - Ey * Ey;
 
-            // TODO: Can replace this with same code as in fit_line.
             double normal_theta = .5 * atan2f(-2 * Cxy, (Cyy - Cxx));
             nx = cosf(normal_theta);
             ny = sinf(normal_theta);
@@ -1799,10 +1677,7 @@ void corner_detector::edgeRefine(const Mat& src, vector<featureInfo>& features, 
             lines_last[edge][3] = ny;
         }
 
-        // now refit the corners of the quad
         for (int it = 0; it < 4; it++) {
-
-            // solve for the intersection of lines (it) and (it+1)&3.
             double A00 = lines_next[it][3], A01 = -lines_last[(it + 1) & 3][3];
             double A10 = -lines_next[it][2], A11 = lines_last[(it + 1) & 3][2];
             double B0 = -lines_next[it][0] + lines_last[(it + 1) & 3][0];
@@ -1865,7 +1740,7 @@ void corner_detector::markerOrganization(vector<featureInfo> feature, vector<Mar
             vector_center = feature[i].feature_center - feature[j].feature_center;
             vector_longedge = feature[i].corners[0] - feature[i].corners[5];
             center_angle = (vector_center.x * vector_longedge.x + vector_center.y * vector_longedge.y) / sqrt((vector_center.x * vector_center.x + vector_center.y * vector_center.y) * (vector_longedge.x * vector_longedge.x + vector_longedge.y * vector_longedge.y));
-            if ((abs(feature[i].feature_angle - feature[j].feature_angle) < threshold_angle || abs(180 - abs(feature[i].feature_angle - feature[j].feature_angle)) < threshold_angle) && (distance_2points(feature[i].feature_center, feature[j].feature_center) < 0.3 * distance_2points(feature[i].corners[0], feature[i].corners[5])) && (abs(center_angle) < threshold_vertical)){
+            if ((abs(feature[i].feature_angle - feature[j].feature_angle) < threshold_angle * 2 || abs(180 - abs(feature[i].feature_angle - feature[j].feature_angle)) < threshold_angle) && (distance_2points(feature[i].feature_center, feature[j].feature_center) < 0.3 * distance_2points(feature[i].corners[0], feature[i].corners[5])) && (abs(center_angle) < threshold_vertical)){
                 int father_i = union_find(i), father_j = union_find(j);
                 if (father_i != father_j)
                     father[father_j] = father_i;
