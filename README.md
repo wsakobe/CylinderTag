@@ -32,4 +32,4 @@ We have defined a CylinderTag class in the recognizer, which contains the functi
 
 ## License
 
-[MIT](LICENSE) © Richard Littauer
+[MIT](LICENSE)
