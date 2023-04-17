@@ -1,7 +1,6 @@
 # CylinderTag: An Accurate and Flexible Marker for Cylinder-Shape Objects Pose Estimation Based on Projective Invariants
 
-html <div align="center"> <img src="pose.bmp" width = 960 height = 600 /> </div>
-![image](pose.bmp)
+<div align="center"> <img src="pose.bmp" width = 480 height = 300 /> </div>
 
 ## Table of Contents
 
