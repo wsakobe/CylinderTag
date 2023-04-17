@@ -102,6 +102,8 @@ void CylinderTag::detect(const Mat& img, vector<MarkerInfo>& markers_info, int a
 		detector.edgeRefine(img_float, features, features, cornerSubPixDist);
 	}
 	
+	//Plot feature
+	/*
 	for (int i = 0; i < features.size(); i++) {
 		line(imgMark, features[i].corners[0], features[i].corners[1], Scalar(0, 255, 255), 2.5);
 		line(imgMark, features[i].corners[1], features[i].corners[2], Scalar(0, 255, 255), 2.5);
@@ -118,34 +120,27 @@ void CylinderTag::detect(const Mat& img, vector<MarkerInfo>& markers_info, int a
 		putText(imgMark, oss.str(), features[i].feature_center, FONT_ITALIC, 0.6, Scalar(250, 250, 250), 2);
 	}
 	imshow("Feature Organization", imgMark);
-	waitKey(1);
-	
+	waitKey(1);*/
+
 	detector.markerOrganization(features, markers);
 
 	detector.markerDecoder(markers, markers, this->state, this->featureSize);
 	markers_info = markers;
 
-	//Plot
+	//Plot marker
 	/*
-	vector<cv::Vec3b> colors(5);
-	colors[0] = cv::Vec3b(255, 31, 91);
-	colors[1] = cv::Vec3b(0, 154, 222);
-	colors[2] = cv::Vec3b(175, 88, 186);
-	colors[3] = cv::Vec3b(255, 198, 30);
-	colors[4] = cv::Vec3b(0, 205, 108);
-
 	imgMark = img.clone();
 	cvtColor(img, imgMark, COLOR_GRAY2RGB);
 	for (int i = 0; i < markers.size(); i++) {
 		for (int j = 0; j < markers[i].cornerLists.size(); j++) {
-			line(imgMark, markers[i].cornerLists[j][0], markers[i].cornerLists[j][1], Scalar(colors[i]), 3.5);
-			line(imgMark, markers[i].cornerLists[j][1], markers[i].cornerLists[j][2], Scalar(colors[i]), 3.5);
-			line(imgMark, markers[i].cornerLists[j][2], markers[i].cornerLists[j][7], Scalar(colors[i]), 3.5);
-			line(imgMark, markers[i].cornerLists[j][7], markers[i].cornerLists[j][4], Scalar(colors[i]), 3.5);
-			line(imgMark, markers[i].cornerLists[j][4], markers[i].cornerLists[j][5], Scalar(colors[i]), 3.5);
-			line(imgMark, markers[i].cornerLists[j][5], markers[i].cornerLists[j][6], Scalar(colors[i]), 3.5);
-			line(imgMark, markers[i].cornerLists[j][6], markers[i].cornerLists[j][3], Scalar(colors[i]), 3.5);
-			line(imgMark, markers[i].cornerLists[j][3], markers[i].cornerLists[j][0], Scalar(colors[i]), 3.5);
+			line(imgMark, markers[i].cornerLists[j][0], markers[i].cornerLists[j][1], Scalar(200, 120, 120), 3.5);
+			line(imgMark, markers[i].cornerLists[j][1], markers[i].cornerLists[j][2], Scalar(200, 120, 120), 3.5);
+			line(imgMark, markers[i].cornerLists[j][2], markers[i].cornerLists[j][7], Scalar(200, 120, 120), 3.5);
+			line(imgMark, markers[i].cornerLists[j][7], markers[i].cornerLists[j][4], Scalar(200, 120, 120), 3.5);
+			line(imgMark, markers[i].cornerLists[j][4], markers[i].cornerLists[j][5], Scalar(200, 120, 120), 3.5);
+			line(imgMark, markers[i].cornerLists[j][5], markers[i].cornerLists[j][6], Scalar(200, 120, 120), 3.5);
+			line(imgMark, markers[i].cornerLists[j][6], markers[i].cornerLists[j][3], Scalar(200, 120, 120), 3.5);
+			line(imgMark, markers[i].cornerLists[j][3], markers[i].cornerLists[j][0], Scalar(200, 120, 120), 3.5);
 			for (int k = 0; k < 8; k++)
 				circle(imgMark, markers[i].cornerLists[j][k], 3, Scalar(107, 90, 219), -1);
 			ostringstream oss;
@@ -234,27 +229,17 @@ void CylinderTag::drawAxis(const Mat& img, vector<MarkerInfo> markers, vector<Mo
 		model_points.push_back(reconstruct_model[ID].base + reconstruct_model[ID].axis * axisLength);
 		model_points.push_back(reconstruct_model[ID].base + Point3f(0.0372, 0.0372, 0.9986) * axisLength);
 		model_points.push_back(reconstruct_model[ID].base + Point3f(0.9980, -0.0520, -0.0353) * axisLength);
-		
-		model_points.push_back(Point3f(1.0898, 98.1998, 319.2408));
-			
+					
 		imagePoints.clear();
 		projectPoints(model_points, pose[i].rvec, pose[i].tvec, camera.Intrinsic, camera.distCoeffs, imagePoints);
 		for (int i = 0; i < imagePoints.size() - 5; i++) {
 			circle(imgMark, imagePoints[i], 5, Scalar(255, 234, 32), -1);
 		}
 
-		arrowedLine(imgMark, imagePoints[imagePoints.size() - 5], imagePoints[imagePoints.size() - 4], Scalar(255, 0, 0), 15, LINE_AA, 0, 0.2);
-		arrowedLine(imgMark, imagePoints[imagePoints.size() - 5], imagePoints[imagePoints.size() - 3], Scalar(0, 255, 0), 15, LINE_AA, 0, 0.2);
-		arrowedLine(imgMark, imagePoints[imagePoints.size() - 5], imagePoints[imagePoints.size() - 2], Scalar(0, 0, 255), 15, LINE_AA, 0, 0.2);
-		circle(imgMark, imagePoints[imagePoints.size() - 5], 8, Scalar(247, 235, 235), -1);
-		
-		//circle(imgMark, imagePoints[imagePoints.size() - 1], 2, Scalar(120, 120, 32), -1);
-
-		float reprojection_error = 0;
-		for (int i = 0; i < imagePoints.size() - 5; i++) {
-			reprojection_error += sqrt((imagePoints[i].x - image_points[i].x) * (imagePoints[i].x - image_points[i].x) + (imagePoints[i].y - image_points[i].y) * (imagePoints[i].y - image_points[i].y));
-		}
-		cout << "PnP RPE: " << reprojection_error / (imagePoints.size() - 4) << endl;
+		arrowedLine(imgMark, imagePoints[imagePoints.size() - 4], imagePoints[imagePoints.size() - 3], Scalar(255, 0, 0), 10, LINE_AA, 0, 0.2);
+		arrowedLine(imgMark, imagePoints[imagePoints.size() - 4], imagePoints[imagePoints.size() - 2], Scalar(0, 255, 0), 10, LINE_AA, 0, 0.2);
+		arrowedLine(imgMark, imagePoints[imagePoints.size() - 4], imagePoints[imagePoints.size() - 1], Scalar(0, 0, 255), 10, LINE_AA, 0, 0.2);
+		circle(imgMark, imagePoints[imagePoints.size() - 4], 8, Scalar(247, 235, 235), -1);
 	}
 	imshow("Plot", imgMark);
 	waitKey(1);

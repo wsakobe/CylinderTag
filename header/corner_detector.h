@@ -6,7 +6,6 @@
 
 using namespace std;
 using namespace cv;
-using namespace ceres;
 
 struct featureInfo{
     vector<Point2f> corners;
@@ -36,9 +35,6 @@ struct pos_with_ID{
 
 class corner_detector{
 public:
-    corner_detector();
-    ~corner_detector();
-
     void adaptiveThreshold(const Mat& src, Mat& dst, int thresholdWindow = 5);
     
     void connectedComponentLabeling(const Mat& src, vector<vector<Point>>& quadArea, int method = 0);
@@ -51,13 +47,7 @@ public:
 
     void cornerObtain(const Mat& src, vector<featureInfo>& features);
 
-    void edgeSubPix(const Mat& src, vector<featureInfo>& features, vector<featureInfo>& features_refined, int subPixWindow);
-
     void edgeRefine(const Mat& src, vector<featureInfo>& features, vector<featureInfo>& features_refined, int subPixWindow);
-
-    void featureCheck(vector<featureInfo>& features, vector<featureInfo>& features_checked);
-
-    void buildProblem(Problem* problem, vector<Point> inlier_points, vector<float> inlier_pixels);
 
     featureInfo featureOrganization(vector<Point2f> quad1, vector<Point2f> quad2, Point2f quad1_center, Point2f quad2_center, float feature_angle);
 
@@ -75,7 +65,6 @@ private:
 
     // CCL use
     Mat img_labeled, stats, centroids;
-    //bool illegal[1000];
     vector<bool> illegal;
     int nccomp_area = 0;
 
@@ -120,14 +109,6 @@ private:
     float quad_area, RAC;
     float threshold_RAC = 0.3;
     vector<Point2f> corners_pass;
-
-    // Edge refinement use
-    vector<Point2f> contours;
-    vector<Point> inlier_points;
-    vector<float> inlier_pixels;
-    float width, pixel_high_low[2], mean_pixel[2], dist, ratio_start, ratio_end, point_dist;
-    double line_function[3]; 
-    int count[2], direction;
 
     // Para Judgment use
     Point2f corner_center;

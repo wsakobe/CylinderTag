@@ -8,11 +8,11 @@
   </PropertyGroup>
   <ItemDefinitionGroup>
     <Link>
-      <AdditionalDependencies>opencv_imgproc453.lib;opencv_aruco453.lib;opencv_ccalib453.lib;opencv_core453.lib;opencv_highgui453.lib;MvCameraControl.lib;ceres.lib;gflags.lib;glog.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>C:\Program Files %28x86%29\MVS\Development\Libraries\win64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>opencv_imgproc453.lib;opencv_aruco453.lib;opencv_ccalib453.lib;opencv_core453.lib;opencv_highgui453.lib;ceres.lib;gflags.lib;glog.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
     <ClCompile>
-      <AdditionalIncludeDirectories>C:\Program Files %28x86%29\MVS\Development\Includes;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemGroup />

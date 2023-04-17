@@ -118,7 +118,6 @@ void PoseEstimator::PoseBA(vector<Point2f> imagePoints, vector<Point3f> worldPoi
 	Solver::Summary summary;
 
 	Solve(options, &problem, &summary);
-	std::cout << summary.BriefReport() << "\n";
 
 	pose.rvec.at<double>(0, 0) = rot[0];
 	pose.rvec.at<double>(1, 0) = rot[1];

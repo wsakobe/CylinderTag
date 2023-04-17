@@ -7,6 +7,7 @@
 
 using namespace std;
 using namespace cv;
+using namespace ceres;
 
 struct CamInfo {
     Mat Intrinsic, distCoeffs;
