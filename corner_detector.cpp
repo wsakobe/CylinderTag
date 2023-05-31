@@ -612,7 +612,7 @@ void corner_detector::edgeRefine(const Mat& src, vector<featureInfo>& features, 
             nx /= mag;
             ny /= mag;
 
-            int nsamples = max(128, mag / 8);
+            int nsamples = max(128.0, mag / 8);
             double Mx = 0, My = 0, Mxx = 0, Mxy = 0, Myy = 0, N = 0;
 
             for (int s = 0; s < nsamples * 1; s++) {
@@ -687,7 +687,7 @@ void corner_detector::edgeRefine(const Mat& src, vector<featureInfo>& features, 
             nx /= mag;
             ny /= mag;
 
-            int nsamples = max(128, mag / 8); 
+            int nsamples = max(128.0, mag / 8); 
             double Mx = 0, My = 0, Mxx = 0, Mxy = 0, Myy = 0, N = 0;
 
             for (int s = nsamples * 0; s < nsamples * 1; s++) {
@@ -784,7 +784,7 @@ void corner_detector::edgeRefine(const Mat& src, vector<featureInfo>& features, 
             nx /= mag;
             ny /= mag;
 
-            int nsamples = max(128, mag / 8);
+            int nsamples = max(128.0, mag / 8);
             double Mx = 0, My = 0, Mxx = 0, Mxy = 0, Myy = 0, N = 0;
 
             for (int s = 0; s < nsamples * 1; s++) {
@@ -860,7 +860,7 @@ void corner_detector::edgeRefine(const Mat& src, vector<featureInfo>& features, 
             nx /= mag;
             ny /= mag;
 
-            int nsamples = max(128, mag / 8);
+            int nsamples = max(128.0, mag / 8);
             double Mx = 0, My = 0, Mxx = 0, Mxy = 0, Myy = 0, N = 0;
 
             for (int s = 0; s < nsamples * 1; s++) {
@@ -952,8 +952,8 @@ void corner_detector::edgeRefine(const Mat& src, vector<featureInfo>& features, 
 
 template <typename T, typename Compare>
 std::vector<std::size_t> sort_permutation(
-    const std::vector<T>& vec,
-    Compare& compare)
+    const std::vector<T> vec,
+    Compare compare)
 {
     std::vector<std::size_t> p(vec.size());
     std::iota(p.begin(), p.end(), 0);
@@ -1310,7 +1310,7 @@ pos_with_ID corner_detector::match_dictionary(int *code, Mat1i& state, int lengt
             }
         }
     }
-    if (max_coverage >= min(0.8 * legal_bits, legal_bits - 1) && max_coverage > second_coverage){
+    if (max_coverage >= min(0.8 * legal_bits, legal_bits - 1.0) && max_coverage > second_coverage){
         POS_ID.ID = max_coverage_pos.x;
         POS_ID.isGood = true;
         if (direc == -1) POS_ID.inverse = true;
