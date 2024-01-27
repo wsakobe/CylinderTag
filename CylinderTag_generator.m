@@ -49,12 +49,10 @@ function CylinderTagGenerator(tag_col, feature_size, tag_number, height_width_ra
         flag=0;
         dfs(tag_col,[],feature_size,tag_number);        
     end
-    ID=load('CTag_Generated/ID.mat');
-    ID=ID.ID;
     if testConflict(ID, feature_size)
         disp('The Marker Codes are unique!');
         plot_tag(ID, height_width_ratio);
-%         save ./CTag_Generated/ID.mat ID 
+        save ./CTag_Generated/ID.mat ID 
     else
         disp('The Marker Codes are not unique!');
     end
