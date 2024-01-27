@@ -15,8 +15,8 @@ void read_from_video(const string& path);
 int main(int argc, char** argv){
 	google::InitGoogleLogging(argv[0]);
 	
-	//read_from_image("test.bmp");
-	read_from_video("test.avi"); 
+	//read_from_image("../test.bmp");
+	read_from_video("../test.avi"); 
 
 	waitKey(0);
 	destroyAllWindows();
@@ -28,9 +28,9 @@ int main(int argc, char** argv){
 void read_from_image(const string& path){
 	frame = imread(path);
 
-	CylinderTag marker("CTag_2f12c.marker");
-	marker.loadModel("CTag_2f12c.model", marker_model);
-	marker.loadCamera("cameraParams.yml", camera);
+	CylinderTag marker("../CTag_2f12c.marker");
+	marker.loadModel("../CTag_2f12c.model", marker_model);
+	marker.loadCamera("../cameraParams.yml", camera);
 
 	if (frame.channels() == 3) {
 		cvtColor(frame, img_gray, COLOR_BGR2GRAY);
@@ -45,9 +45,9 @@ void read_from_video(const string& path){
 	VideoCapture capture; 
 	frame = capture.open(path );	
 
-	CylinderTag marker("CTag_2f12c.marker");
-	marker.loadModel("CTag_2f12c.model", marker_model);
-	marker.loadCamera("cameraParams.yml", camera);
+	CylinderTag marker("../CTag_2f12c.marker");
+	marker.loadModel("../CTag_2f12c.model", marker_model);
+	marker.loadCamera("../cameraParams.yml", camera);
 
 	while (capture.read(frame))
 	{	

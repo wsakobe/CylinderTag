@@ -373,3 +373,5 @@ FodyWeavers.xsd
 /xyzRefinedPoints.mat
 /Calib
 /photo
+/build
+build/CMakeCache.txt
