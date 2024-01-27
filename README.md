@@ -35,3 +35,16 @@ We have defined a CylinderTag class in the recognizer, which contains the functi
 ## License
 
 [MIT](LICENSE)
+
+## Citation
+If you utilize this code for any academic purposes, kindly reference the following work in your citations:
+
+```bibtex
+@article{wang2024cylindertag,
+  title={CylinderTag: An Accurate and Flexible Marker for Cylinder-Shape Objects Pose Estimation Based on Projective Invariants},
+  author={Wang, Shaoan and Zhu, Mingzhu and Hu, Yaoqing and Li, Dongyue and Yuan, Fusong and Yu, Junzhi},
+  journal={IEEE Transactions on Visualization and Computer Graphics},
+  year={2024},
+  publisher={IEEE}
+}
+```
