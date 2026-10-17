@@ -65,6 +65,7 @@ void CylinderTag::check_dictionary(const Mat1i& input_state)
 }
 
 void CylinderTag::detect(const Mat& img, vector<MarkerInfo>& markers_info, int adaptiveThresh, const bool cornerSubPix, int cornerSubPixDist){
+    markers_info.clear();
 	// Display
     Mat imgMark(img.rows, img.cols, CV_32FC3);
     cvtColor(img, imgMark, COLOR_GRAY2RGB);

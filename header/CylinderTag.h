@@ -11,6 +11,19 @@ using namespace cv;
 
 class CylinderTag{
 public:
+    struct DetectionStats {
+        int components=0, quads=0, features=0, groups=0, validColumns=0, selectedWindow=0;
+    };
+    const DetectionStats& detectionStats() const { return stats; }
+    const vector<MarkerInfo>& detectionCandidates() const { return candidateMarkers; }
+    void captureDebugImages(bool enabled) { debugCapture=enabled; }
+    void useMultiThreshold(bool enabled) { multiThreshold=enabled; }
+    const vector<pair<string,Mat>>& debugImages() const { return stageImages; }
+
+    // Experimental full-resolution path; legacy detect() retains its defaults.
+    void detectRobust(const Mat& img, vector<MarkerInfo>& result, int adaptiveThresh=5,
+                      bool refine=true, int searchRadius=3);
+
     // Load state matrix of CylinderTag from file
 	CylinderTag(const string& path);
 
@@ -33,6 +46,12 @@ public:
     void drawAxis(const Mat& img, vector<MarkerInfo> markers, vector<ModelInfo> reconstruct_model, vector<PoseInfo>& pose, CamInfo camera, int axisLength);
 
 private:
+    DetectionStats stats;
+    vector<MarkerInfo> candidateMarkers;
+    bool debugCapture=false, multiThreshold=true;
+    vector<pair<string,Mat>> stageImages;
+    void detectRobustSingle(const Mat& img, vector<MarkerInfo>& result, int window, bool refine, int radius);
+
     corner_detector detector;
     
     vector<vector<Point>> quadAreas_labeled;
@@ -42,7 +61,7 @@ private:
     vector<MarkerInfo> markers;
     
     Mat1i state;
-    int featureSize;
+    int featureSize=2;
 
 	void load_from_file(const string path); 
 	void load_from_set(const Mat1i& set_state);

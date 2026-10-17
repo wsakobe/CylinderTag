@@ -1,0 +1,71 @@
+{
+  "source": "https://github.com/ShaoanWang/CylinderTag/blob/8fb42c9/test.avi",
+  "video_sha256": "a02e3dc7e924e642d619da7f51b942f500952335b73d4265c020dd420a75e2ae",
+  "dictionary_sha256": "645265d022ed33e9d1652d039237a208faa5f820905f5fea6e9512f34f3b3f5e",
+  "metric": "Detection availability, not ground-truth recognition accuracy",
+  "ground_truth": null,
+  "settings": {
+    "scale": 1,
+    "threshold_window": 5,
+    "refine": true,
+    "refinement_radius": 5,
+    "roi": null,
+    "tracking": false,
+    "dictionary_transform": null
+  },
+  "implementation_commits": {
+    "original": "8fb42c9",
+    "bugfix": "6552d0c",
+    "robust": "69153ad"
+  },
+  "runs": [
+    {
+      "label": "original",
+      "executable_sha256": "71455b9164c3ee0caf40e946558a65ba5fe32ce2bd584e3a38c3bc1cd7b7c1c9",
+      "frames": 259,
+      "detected_frames": 259,
+      "detection_percent": 100.0,
+      "ids_by_frame_count": {
+        "5": 259
+      },
+      "missing_frames": []
+    },
+    {
+      "label": "bugfix",
+      "executable_sha256": "cca96f92cb69d5b08398867eb077a54c1368b9ed0bc8410df7980a371859fef0",
+      "frames": 259,
+      "detected_frames": 259,
+      "detection_percent": 100.0,
+      "ids_by_frame_count": {
+        "5": 259
+      },
+      "missing_frames": []
+    },
+    {
+      "label": "robust",
+      "executable_sha256": "cc760b6f080e22e449abe482462a590a2bf66e2b5e82c732e488113ce9863e16",
+      "frames": 259,
+      "detected_frames": 245,
+      "detection_percent": 94.5945945945946,
+      "ids_by_frame_count": {
+        "5": 245
+      },
+      "missing_frames": [
+        3,
+        12,
+        13,
+        15,
+        16,
+        56,
+        80,
+        93,
+        96,
+        109,
+        157,
+        164,
+        174,
+        220
+      ]
+    }
+  ]
+}

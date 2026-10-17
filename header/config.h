@@ -10,13 +10,17 @@
 #include<sstream>
 #include<iomanip>
 #include<fstream>
+#include<array>
+#include<cmath>
+#include<numeric>
+#include<stdexcept>
 
 //OpenCV headers
 #include <opencv2/core.hpp>
 #include <opencv2/imgcodecs.hpp>
 #include <opencv2/imgproc.hpp>
 #include <opencv2/highgui.hpp>
-#include <opencv2/gapi/core.hpp>
+#include <opencv2/videoio.hpp>
 #include <opencv2/core/utils/logger.hpp>
 #include <opencv2/features2d.hpp>
 #include <opencv2/calib3d.hpp>
