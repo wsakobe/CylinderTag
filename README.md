@@ -128,6 +128,45 @@ does not support reflections. The four-column minimum can reject views accepted
 by the original detector, and the extra reflection hypotheses increase the
 search space. Score thresholds are experimental, not calibrated probabilities.
 
+#### Additional real-video check: regression on the upstream sample
+
+The unchanged upstream `test.avi` (1920×1200, 259 frames) was evaluated after
+submitting this Draft, without further tuning. All methods use the same full
+canonical 41-ID dictionary, scale 1, threshold window 5, refinement radius 5,
+and no ROI or tracking; the robust path keeps its default multiple windows.
+
+| Implementation | Frames with detections | Output IDs |
+| --- | ---: | --- |
+| Upstream `8fb42c9` | 259/259 (100.00%) | 5 only |
+| Bug fixes #12 | 259/259 (100.00%) | 5 only |
+| Opt-in robust path | 245/259 (94.59%) | 5 only |
+
+**The robust path regresses by 14 frames (5.41 percentage points).** No ID/corner
+ground-truth annotations are provided with this sample; these are detection
+availability counts, not independently verified recognition accuracy. Agreement
+on ID 5 is not an independent ground-truth label. In five missed frames the
+selected threshold's largest group contains three columns, below the decoder's
+four-column minimum; other rejection causes have not yet been isolated. This
+is further evidence for keeping the path opt-in and this PR a Draft.
+
+`tests/sample_video_results.json` records hashes, implementation commits, counts
+and missing-frame indices. The sample's SHA-256 matches upstream `8fb42c9`.
+To rerun with headless executables built against the three revisions:
+
+```bash
+python3 tests/compare_sample_videos.py test.avi \
+  --original /path/to/original/fair_video \
+  --bugfix /path/to/bugfix/fair_video \
+  --improved build/robust/cylindertag_video --output /tmp/sample-comparison
+```
+
+The standard-library-only comparison script supports multiple canonical input
+videos, saves exact commands and SHA-256 hashes, and checks sequential frame
+indices and equal frame counts. `--summarize-existing` reads prior outputs.
+The legacy headless driver uses the same scale/window/refinement settings;
+the GUI demo must not be substituted with different defaults. No runtime
+comparison is claimed by these runs.
+
 ## License
 
 [MIT](LICENSE)
