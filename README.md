@@ -32,6 +32,17 @@ We provide a simple MATLAB-based marker generator where the user can modify the 
 
 We have defined a CylinderTag class in the recognizer, which contains the functions detect, estimatePose, drawAxis, etc. You can find its usage and definition in the source file.
 
+### Regression tests
+
+```bash
+cmake -S . -B build/tests -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCYLINDERTAG_BUILD_TESTS=ON
+cmake --build build/tests -j
+ctest --test-dir build/tests --output-on-failure
+```
+
+These tests cover image-border thresholds, right-side projective decoding,
+unmatched column codes, column-width averaging, and stale results after a failed detection.
+
 ## License
 
 [MIT](LICENSE)
