@@ -26,3 +26,18 @@ add_executable(${PROJECT_NAME}
 
 # Link libraries
 target_link_libraries(${PROJECT_NAME} ${OpenCV_LIBS} ${CERES_LIBRARIES})
+
+option(CYLINDERTAG_BUILD_TESTS "Build detector regression tests" OFF)
+if(CYLINDERTAG_BUILD_TESTS)
+    enable_testing()
+    add_executable(cylindertag_regression_tests
+        tests/detector_regression.cpp
+        CylinderTag.cpp
+        corner_detector.cpp
+        pose_estimation.cpp
+    )
+    target_link_libraries(cylindertag_regression_tests ${OpenCV_LIBS} ${CERES_LIBRARIES})
+    foreach(case threshold_borders right_midpoint invalid_codes column_width stale_detections)
+        add_test(NAME ${case} COMMAND cylindertag_regression_tests ${case} ${PROJECT_SOURCE_DIR}/CTag_2f12c.marker)
+    endforeach()
+endif()

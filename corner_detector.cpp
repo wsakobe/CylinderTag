@@ -51,19 +51,17 @@ void corner_detector::adaptiveThreshold(const Mat& src, Mat& dst, int thresholdW
         col_count = 0;
         row_count++;
     }
-    for (int i = 0; i < row_number - 2; i++){
-        for (int j = 0; j < col_number - 2; j++){
-            Rect rect(j, i, 3, 3);
+    for (int i = 0; i < row_number; i++){
+        for (int j = 0; j < col_number; j++){
+            const int x = max(0, j - 1), y = max(0, i - 1);
+            Rect rect(x, y, min(col_number, j + 2) - x, min(row_number, i + 2) - y);
             min_part = extreme_min(rect);
             minMaxLoc(min_part, &minVal, NULL, NULL, NULL);
             max_part = extreme_max(rect);
             minMaxLoc(max_part, NULL, &maxVal, NULL, NULL);
-            extreme_min_final.at<float>(row_count_final, col_count_final) = (float)minVal;
-            extreme_max_final.at<float>(row_count_final, col_count_final) = (float)maxVal;
-            col_count_final++;
+            extreme_min_final.at<float>(i, j) = (float)minVal;
+            extreme_max_final.at<float>(i, j) = (float)maxVal;
         }   
-        col_count_final = 1;
-        row_count_final++;
     }
     
     for (int i = 0; i < src.rows; i++){
@@ -1024,7 +1022,7 @@ void corner_detector::markerOrganization(vector<featureInfo> feature, vector<Mar
         for (int j = 0; j < marker_ID[i].size(); j++){
             mark.cornerLists.push_back(feature[marker_ID[i][j]].corners);
             mark.feature_center.push_back(feature[marker_ID[i][j]].feature_center);
-            mark.edge_length.push_back((distance_2points(feature[marker_ID[i][j]].corners[0], feature[marker_ID[i][j]].corners[1]) + distance_2points(feature[marker_ID[i][j]].corners[4], feature[marker_ID[i][j]].corners[5]) / 2));
+            mark.edge_length.push_back((distance_2points(feature[marker_ID[i][j]].corners[0], feature[marker_ID[i][j]].corners[1]) + distance_2points(feature[marker_ID[i][j]].corners[4], feature[marker_ID[i][j]].corners[5])) / 2);
             double angle_now = fastAtan2(mark.cornerLists[j][0].y - mark.cornerLists[j][5].y, mark.cornerLists[j][0].x - mark.cornerLists[j][5].x);
             if (angle_now > 180) angle_now -= 180;
             marker_angle += angle_now;
@@ -1054,6 +1052,8 @@ void corner_detector::markerOrganization(vector<featureInfo> feature, vector<Mar
 void corner_detector::featureExtraction(MarkerInfo& marker_src, MarkerInfo& marker_dst, int direction) {
     marker_dst = marker_src;
     for (int i = 0; i < marker_src.cornerLists.size(); i++) {
+        ID_left = -1;
+        ID_right = -1;
         if (!direction) {
             if (marker_src.cornerLists[i][0].x > marker_src.cornerLists[i][4].x) {
                 swap(marker_dst.cornerLists[i][0], marker_dst.cornerLists[i][4]);
@@ -1173,10 +1173,10 @@ void corner_detector::featureExtraction(MarkerInfo& marker_src, MarkerInfo& mark
 
         //right ID recovery
         is_long_feature = false;
-        dist1 = distance_2points(middle_left, marker_src.cornerLists[i][1]);
-        dist2 = distance_2points(middle_left, marker_src.cornerLists[i][2]);
-        dist3 = distance_2points(middle_left, marker_src.cornerLists[i][4]);
-        dist4 = distance_2points(middle_left, marker_src.cornerLists[i][7]);
+        dist1 = distance_2points(middle_right, marker_src.cornerLists[i][1]);
+        dist2 = distance_2points(middle_right, marker_src.cornerLists[i][2]);
+        dist3 = distance_2points(middle_right, marker_src.cornerLists[i][4]);
+        dist4 = distance_2points(middle_right, marker_src.cornerLists[i][7]);
         if (dist2 * dist3 < dist1 * dist4) is_long_feature = true;
 
         for (int j = 0; j < 4; j++) {
@@ -1204,7 +1204,7 @@ void corner_detector::featureExtraction(MarkerInfo& marker_src, MarkerInfo& mark
         marker_dst.cr_right.push_back(cross_ratio_right);
         marker_dst.feature_ID_left.push_back(ID_left);
         marker_dst.feature_ID_right.push_back(ID_right);
-        marker_dst.feature_ID.push_back(ID_left * 8 + ID_right);
+        marker_dst.feature_ID.push_back(ID_left >= 0 && ID_right >= 0 ? ID_left * 8 + ID_right : -2);
     }
 }
 
