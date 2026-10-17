@@ -19,6 +19,9 @@ struct MarkerInfo{
     vector<vector<Point2f>> cornerLists;
     vector<Point2f> feature_center;
     vector<float> edge_length, cr_left, cr_right;
+    bool mirrored = false;
+    float decodeError = 0, decodeMargin = 0;
+    int supportColumns = 0;
 };
 
 struct corners_pre{
@@ -56,6 +59,15 @@ public:
     void markerOrganization(vector<featureInfo> feature, vector<MarkerInfo>& markers);
 
     void markerDecoder(vector<MarkerInfo> markers_src, vector<MarkerInfo>& markers_dst, Mat1i& state, int featureSize);
+
+    // Used only by CylinderTag::detectRobust().
+    void adaptiveThresholdRobust(const Mat& src, Mat& dst, int window);
+    void contourQuads(const Mat& binary, vector<vector<Point2f>>& quads);
+    void refineQuads(const Mat& gray, vector<vector<Point2f>>& quads, int searchRadius);
+    void featureRecoveryRobust(vector<vector<Point2f>>& quads, vector<featureInfo>& features);
+    void markerOrganizationRobust(vector<featureInfo> features, vector<MarkerInfo>& markers);
+    void featureExtractionRobust(MarkerInfo& input, MarkerInfo& output, int direction);
+    void markerDecoderRobust(vector<MarkerInfo> input, vector<MarkerInfo>& output, Mat1i& state, int featureSize);
 
 private:
     // Adaptive threshold use
